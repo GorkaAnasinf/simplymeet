@@ -4,14 +4,13 @@
     {
       "label": "Android: Start AVD Medium",
       "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-Command",
-        "$roots = @($env:ANDROID_SDK_ROOT, $env:ANDROID_HOME, (Join-Path $env:LOCALAPPDATA 'Android\\Sdk')) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -Unique; if (-not $roots) { throw 'No se encontro Android SDK. Define ANDROID_SDK_ROOT o ANDROID_HOME.' }; $emu = $null; foreach ($root in $roots) { $candidate = Join-Path $root 'emulator\\emulator.exe'; if (Test-Path $candidate) { $emu = $candidate; break } }; if (-not $emu) { throw 'No se encontro emulator.exe en el Android SDK detectado.' }; Start-Process -FilePath $emu -ArgumentList @('-avd', 'Medium_Phone_API_36.1') -WindowStyle Normal"
-      ],
+      "command": "$sdkPaths = @($env:ANDROID_SDK_ROOT, $env:ANDROID_HOME, (Join-Path (Join-Path $env:LOCALAPPDATA 'Android') 'Sdk')); $emu = $null; foreach ($p in $sdkPaths) { if ($p) { $c = Join-Path (Join-Path $p 'emulator') 'emulator.exe'; if (Test-Path $c) { $emu = $c; break } } }; if (-not $emu) { throw 'No se encontro emulator.exe en el Android SDK.' }; Start-Process -FilePath $emu -ArgumentList '-avd Medium_Phone_API_36.1' -WindowStyle Normal",
+      "options": {
+        "shell": {
+          "executable": "powershell.exe",
+          "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command"]
+        }
+      },
       "problemMatcher": []
     },
     {
