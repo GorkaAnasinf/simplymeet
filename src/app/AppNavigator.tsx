@@ -2,6 +2,7 @@ import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import { CalendarScreen } from "../features/calendar/screens/CalendarScreen";
+import { splashColors } from "../features/splash/theme/splashColors";
 
 export type RootStackParamList = {
   Calendar: undefined;
@@ -13,22 +14,15 @@ const navTheme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
-    background: "#F4F7FB",
+    background: splashColors.gradientStart,
   },
 };
 
 export function AppNavigator() {
   return (
     <NavigationContainer theme={navTheme}>
-      <Stack.Navigator
-        initialRouteName="Calendar"
-        screenOptions={{
-          headerStyle: { backgroundColor: "#F4F7FB" },
-          headerShadowVisible: false,
-          headerTitleStyle: { fontWeight: "700" },
-        }}
-      >
-        <Stack.Screen name="Calendar" component={CalendarScreen} options={{ title: "SimplyMeet" }} />
+      <Stack.Navigator initialRouteName="Calendar" screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Calendar" component={CalendarScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
