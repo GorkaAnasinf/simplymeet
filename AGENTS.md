@@ -19,6 +19,10 @@ Actua como **experto en programacion** y **diseno de interfaces para apps movile
 8. Al finalizar cada peticion, proponer:
    - 3 ideas nuevas relacionadas con lo implementado.
    - 3 ideas adicionales, diferentes, que aporten valor a la app.
+9. Si el usuario indica expresamente "cerrar rama", realizar cierre operativo sin PR:
+   - Integrar directamente los cambios al destino acordado.
+   - Publicar en GitHub de forma directa (push).
+   - Eliminar rama local/remota si aplica y dejar el repositorio limpio.
 
 ## Convencion de ramas
 - Formato sugerido para nuevas ramas:

@@ -15,6 +15,15 @@
       "problemMatcher": []
     },
     {
+      "label": "Expo: Start (Clear Metro Cache)",
+      "type": "shell",
+      "command": "npx expo start -c",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "Expo: Android",
       "type": "shell",
       "command": "npm run android",

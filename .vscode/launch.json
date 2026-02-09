@@ -8,6 +8,13 @@
       "command": "npm run android",
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "Android: Start AVD Medium"
+    },
+    {
+      "name": "Expo Android (Dispositivo fisico)",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npx expo start --android --host lan",
+      "cwd": "${workspaceFolder}"
     }
   ]
 }
