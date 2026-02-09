@@ -2,6 +2,19 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "Android: Start AVD Medium",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "$emu = Join-Path $env:ANDROID_SDK_ROOT 'emulator\\emulator.exe'; Start-Process -FilePath $emu -ArgumentList '-avd \"Medium_Phone_API_36.1\"' -WindowStyle Normal"
+      ],
+      "problemMatcher": []
+    },
+    {
       "label": "Expo: Android",
       "type": "shell",
       "command": "npm run android",

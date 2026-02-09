@@ -6,7 +6,8 @@
       "type": "node-terminal",
       "request": "launch",
       "command": "npm run android",
-      "cwd": "${workspaceFolder}"
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "Android: Start AVD Medium"
     }
   ]
 }
