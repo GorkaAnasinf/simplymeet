@@ -23,6 +23,8 @@ Actua como **experto en programacion** y **diseno de interfaces para apps movile
    - Integrar directamente los cambios al destino acordado.
    - Publicar en GitHub de forma directa (push).
    - Eliminar rama local/remota si aplica y dejar el repositorio limpio.
+   - Ejecutar validacion `npm run doctor` antes de fusionar.
+   - Generar/actualizar `RELEASE_NOTES.md` de forma automatica.
 
 ## Convencion de ramas
 - Formato sugerido para nuevas ramas:

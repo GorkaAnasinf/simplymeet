@@ -8,7 +8,9 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "doctor": "npx expo-doctor"
+    "doctor": "npx expo-doctor",
+    "release-notes:branch": "node scripts/generate-release-notes.mjs",
+    "close-branch": "node scripts/close-branch.mjs"
   },
   "dependencies": {
     "@react-navigation/native": "^7.1.28",
