@@ -1,14 +1,18 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 
+import { useOdoo } from "../../odoo/OdooContext";
+import { OdooMeeting } from "../../odoo/types";
 import { FloatingParticles } from "../../splash/components/FloatingParticles";
 import { splashColors } from "../../splash/theme/splashColors";
 import { DayNavigator } from "../components/DayNavigator";
 import { DayScheduleCard } from "../components/DayScheduleCard";
+import { EmployeeSelectorCard } from "../components/EmployeeSelectorCard";
+import { UserMenu } from "../components/UserMenu";
 
-type Meeting = {
+type ScheduleMeeting = {
   id: string;
   title: string;
   start: string;
@@ -21,10 +25,6 @@ function addDays(date: Date, amount: number) {
   return next;
 }
 
-function toDateKey(date: Date) {
-  return date.toISOString().slice(0, 10);
-}
-
 function toDisplayDate(date: Date) {
   return new Intl.DateTimeFormat("es-ES", {
     weekday: "long",
@@ -33,28 +33,68 @@ function toDisplayDate(date: Date) {
   }).format(date);
 }
 
-const agendaByDay: Record<string, Meeting[]> = {
-  // Datos de ejemplo por fecha para simular agenda real.
-  "2026-02-09": [
-    { id: "m1", title: "Daily de producto", start: "09:30", end: "10:00" },
-    { id: "m2", title: "Sync mobile", start: "12:00", end: "12:45" },
-    { id: "m3", title: "Revision con cliente", start: "16:00", end: "17:00" },
-  ],
-  "2026-02-10": [
-    { id: "m4", title: "Planificacion sprint", start: "10:00", end: "11:00" },
-    { id: "m5", title: "One to one", start: "15:00", end: "15:30" },
-  ],
-};
+function toHourMinute(value: string) {
+  const date = new Date(value);
+  return new Intl.DateTimeFormat("es-ES", { hour: "2-digit", minute: "2-digit", hour12: false }).format(date);
+}
+
+function toScheduleMeeting(meeting: OdooMeeting): ScheduleMeeting {
+  return {
+    id: String(meeting.id),
+    title: meeting.title,
+    start: toHourMinute(meeting.start),
+    end: toHourMinute(meeting.end),
+  };
+}
 
 export function CalendarScreen() {
+  const {
+    configured,
+    selectedEmployee,
+    employees,
+    employeesLoading,
+    employeesError,
+    loadEmployees,
+    selectEmployee,
+    clearSelectedEmployee,
+    getMeetingsForDay,
+  } = useOdoo();
+
   const [dayOffset, setDayOffset] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [meetings, setMeetings] = useState<ScheduleMeeting[]>([]);
+  const [meetingsLoading, setMeetingsLoading] = useState(false);
+  const [meetingsError, setMeetingsError] = useState<string | null>(null);
 
   const selectedDate = useMemo(() => addDays(new Date(), dayOffset), [dayOffset]);
   const selectedDateLabel = useMemo(() => toDisplayDate(selectedDate), [selectedDate]);
-  const selectedMeetings = useMemo(() => {
-    // Si no hay datos para el dia, se muestra la tarjeta con bloques libres.
-    return agendaByDay[toDateKey(selectedDate)] ?? [];
-  }, [selectedDate]);
+
+  const fetchMeetings = useCallback(async () => {
+    if (!selectedEmployee) return;
+    setMeetingsLoading(true);
+    setMeetingsError(null);
+
+    try {
+      const rows = await getMeetingsForDay(selectedDate);
+      setMeetings(rows.map(toScheduleMeeting));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "No se pudieron cargar las reuniones.";
+      setMeetingsError(message);
+      setMeetings([]);
+    } finally {
+      setMeetingsLoading(false);
+    }
+  }, [getMeetingsForDay, selectedDate, selectedEmployee]);
+
+  useEffect(() => {
+    if (selectedEmployee) return;
+    loadEmployees();
+  }, [loadEmployees, selectedEmployee]);
+
+  useEffect(() => {
+    if (!selectedEmployee) return;
+    fetchMeetings();
+  }, [fetchMeetings, selectedEmployee]);
 
   return (
     <View style={styles.root}>
@@ -67,13 +107,50 @@ export function CalendarScreen() {
 
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content}>
-          <Text style={styles.brand}>SimplyMeet</Text>
-          <DayNavigator
-            dateLabel={selectedDateLabel}
-            onPreviousDay={() => setDayOffset((value) => value - 1)}
-            onNextDay={() => setDayOffset((value) => value + 1)}
-          />
-          <DayScheduleCard meetings={selectedMeetings} startHour={8} endHour={20} />
+          <View style={styles.header}>
+            <Text style={styles.brand}>SimplyMeet</Text>
+            {selectedEmployee ? (
+              <UserMenu
+                employee={selectedEmployee}
+                open={menuOpen}
+                onOpen={() => setMenuOpen(true)}
+                onClose={() => setMenuOpen(false)}
+                onChangeUser={async () => {
+                  setMenuOpen(false);
+                  setMeetings([]);
+                  await clearSelectedEmployee();
+                  await loadEmployees();
+                }}
+              />
+            ) : null}
+          </View>
+
+          {!configured ? <Text style={styles.error}>Configura credenciales Odoo en variables EXPO_PUBLIC_ODOO_*.</Text> : null}
+
+          {!selectedEmployee ? (
+            <EmployeeSelectorCard
+              employees={employees}
+              loading={employeesLoading}
+              error={employeesError}
+              onRetry={loadEmployees}
+              onSelect={async (employee) => {
+                await selectEmployee(employee);
+              }}
+            />
+          ) : (
+            <>
+              <DayNavigator
+                dateLabel={selectedDateLabel}
+                onPreviousDay={() => setDayOffset((value) => value - 1)}
+                onNextDay={() => setDayOffset((value) => value + 1)}
+              />
+
+              {meetingsLoading ? <Text style={styles.info}>Cargando reuniones...</Text> : null}
+              {meetingsError ? <Text style={styles.error}>{meetingsError}</Text> : null}
+
+              <DayScheduleCard meetings={meetings} startHour={8} endHour={20} />
+            </>
+          )}
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -93,14 +170,26 @@ const styles = StyleSheet.create({
     paddingBottom: 28,
     gap: 16,
   },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   brand: {
     color: splashColors.textBright,
     fontSize: 28,
     fontWeight: "700",
     letterSpacing: 1,
-    textAlign: "center",
     textShadowColor: "rgba(0,0,0,0.35)",
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 6,
+  },
+  info: {
+    color: splashColors.textSubtle,
+    fontSize: 13,
+  },
+  error: {
+    color: "#FCA5A5",
+    fontSize: 13,
   },
 });

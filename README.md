@@ -19,9 +19,16 @@ src/
   features/
     calendar/
       components/
-        AgendaPreview.tsx
+        DayNavigator.tsx
+        DayScheduleCard.tsx
+        EmployeeSelectorCard.tsx
+        UserMenu.tsx
       screens/
         CalendarScreen.tsx
+    odoo/
+      OdooContext.tsx
+      odooClient.ts
+      odooConfig.ts
       types.ts
   shared/
     theme/
@@ -40,6 +47,16 @@ src/
 - `npm run doctor`: chequeo de entorno Expo
 - `npm run release-notes:branch`: genera/actualiza `RELEASE_NOTES.md` para la rama actual
 - `npm run close-branch`: valida doctor, fusiona en `main`, hace push y elimina la rama
+
+## Configuracion Odoo
+
+1. Crea `.env` a partir de `.env.example`.
+2. Define:
+   - `EXPO_PUBLIC_ODOO_URL`
+   - `EXPO_PUBLIC_ODOO_DB`
+   - `EXPO_PUBLIC_ODOO_USERNAME`
+   - `EXPO_PUBLIC_ODOO_PASSWORD`
+3. Reinicia Metro con cache limpia: `npx expo start -c`.
 
 ## Cierre de rama automatizado
 

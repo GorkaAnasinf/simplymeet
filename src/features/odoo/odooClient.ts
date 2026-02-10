@@ -1,0 +1,138 @@
+import { odooConfig, isOdooConfigured } from "./odooConfig";
+import { OdooEmployee, OdooMeeting } from "./types";
+
+type JsonRpcResponse<T> = {
+  result?: T;
+  error?: {
+    message?: string;
+    data?: { message?: string };
+  };
+};
+
+let requestId = 1;
+
+async function callJsonRpc<T>(params: Record<string, unknown>) {
+  if (!isOdooConfigured()) {
+    throw new Error("Configura EXPO_PUBLIC_ODOO_URL, DB, USERNAME y PASSWORD.");
+  }
+
+  const endpoint = `${odooConfig.url}/jsonrpc`;
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      method: "call",
+      params,
+      id: requestId++,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Odoo devolvio HTTP ${response.status}.`);
+  }
+
+  const data = (await response.json()) as JsonRpcResponse<T>;
+  if (data.error) {
+    throw new Error(data.error.data?.message || data.error.message || "Error desconocido de Odoo.");
+  }
+
+  if (!data.result) {
+    throw new Error("Respuesta vacia de Odoo.");
+  }
+
+  return data.result;
+}
+
+async function authenticate() {
+  const uid = await callJsonRpc<number>({
+    service: "common",
+    method: "authenticate",
+    args: [odooConfig.db, odooConfig.username, odooConfig.password, {}],
+  });
+
+  if (!uid) {
+    throw new Error("No se pudo autenticar contra Odoo.");
+  }
+
+  return uid;
+}
+
+async function executeKw<T>(uid: number, model: string, method: string, args: unknown[], kwargs: Record<string, unknown> = {}) {
+  return callJsonRpc<T>({
+    service: "object",
+    method: "execute_kw",
+    args: [odooConfig.db, uid, odooConfig.password, model, method, args, kwargs],
+  });
+}
+
+type RawEmployee = {
+  id: number;
+  name: string;
+  work_email?: string;
+  image_128?: string | false;
+  user_id?: [number, string] | false;
+};
+
+type RawMeeting = {
+  id: number;
+  name: string;
+  start: string;
+  stop: string;
+};
+
+export async function checkOdooConnection() {
+  await authenticate();
+  return true;
+}
+
+export async function listEmployees() {
+  const uid = await authenticate();
+  const rows = await executeKw<RawEmployee[]>(
+    uid,
+    "hr.employee",
+    "search_read",
+    [[["user_id", "!=", false]]],
+    {
+      fields: ["id", "name", "work_email", "image_128", "user_id"],
+      order: "name asc",
+      limit: 200,
+    }
+  );
+
+  return rows.map<OdooEmployee>((row) => ({
+    id: row.id,
+    name: row.name,
+    workEmail: row.work_email || undefined,
+    image128: row.image_128 || undefined,
+    userId: row.user_id ? row.user_id[0] : undefined,
+  }));
+}
+
+export async function listMeetingsForDay(userId: number, day: Date) {
+  const uid = await authenticate();
+
+  const start = new Date(day);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(day);
+  end.setHours(23, 59, 59, 999);
+
+  const rows = await executeKw<RawMeeting[]>(
+    uid,
+    "calendar.event",
+    "search_read",
+    [[["user_id", "=", userId], ["start", ">=", start.toISOString()], ["start", "<=", end.toISOString()]]],
+    {
+      fields: ["id", "name", "start", "stop"],
+      order: "start asc",
+      limit: 200,
+    }
+  );
+
+  return rows.map<OdooMeeting>((row) => ({
+    id: row.id,
+    title: row.name,
+    start: row.start,
+    end: row.stop,
+  }));
+}

@@ -1,98 +1,79 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Animated } from "react-native";
 
-/** Paso individual de inicialización */
 export interface StartupStep {
   label: string;
   done: boolean;
+  failed?: boolean;
 }
 
-/** Definición interna de cada comprobación simulada */
-interface CheckDef {
-  label: string;
-  /** Duración en ms que tarda esta comprobación */
-  duration: number;
+interface UseStartupChecksParams {
+  checkDatabaseConnection: () => Promise<boolean>;
 }
 
-// Comprobaciones simuladas (~6 s en total)
-const CHECKS: CheckDef[] = [
-  { label: "Conectando con el servidor…", duration: 1600 },
-  { label: "Verificando base de datos…", duration: 1500 },
-  { label: "Cargando configuración…", duration: 1500 },
-  { label: "Preparando tu experiencia…", duration: 1400 },
-];
+const STEP_DURATION = 1200;
 
-/**
- * Hook que simula las comprobaciones de arranque.
- * Devuelve el progreso animado (0→1), los pasos y si ya terminó.
- */
-export function useStartupChecks() {
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+export function useStartupChecks({ checkDatabaseConnection }: UseStartupChecksParams) {
   const progress = useRef(new Animated.Value(0)).current;
-  const [steps, setSteps] = useState<StartupStep[]>(
-    CHECKS.map((c) => ({ label: c.label, done: false }))
-  );
+  const [steps, setSteps] = useState<StartupStep[]>([
+    { label: "Conectando con el servidor...", done: false },
+    { label: "Verificando base de datos...", done: false },
+    { label: "Cargando configuracion...", done: false },
+    { label: "Preparando tu experiencia...", done: false },
+  ]);
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [finished, setFinished] = useState(false);
+  const [hasErrors, setHasErrors] = useState(false);
 
-  /** Marca un paso como completado */
-  const completeStep = useCallback(
-    (index: number) => {
-      setSteps((prev) =>
-        prev.map((s, i) => (i === index ? { ...s, done: true } : s))
-      );
-    },
-    []
-  );
+  const completeStep = useCallback((index: number, success = true) => {
+    setSteps((prev) =>
+      prev.map((step, i) => (i === index ? { ...step, done: success, failed: !success } : step))
+    );
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
-    const totalDuration = CHECKS.reduce((sum, c) => sum + c.duration, 0);
-    let elapsed = 0;
 
-    // Pequeña pausa inicial antes de empezar las comprobaciones
-    const initialDelay = setTimeout(() => {
+    const run = async () => {
+      await sleep(450);
       if (cancelled) return;
 
-      // Recorre cada comprobación secuencialmente
-      CHECKS.reduce<Promise<void>>(
-        (chain, check, idx) =>
-          chain.then(
-            () =>
-              new Promise<void>((resolve) => {
-                if (cancelled) return resolve();
-                setCurrentIndex(idx);
+      for (let index = 0; index < steps.length; index += 1) {
+        setCurrentIndex(index);
+        const stepStart = Date.now();
+        let success = true;
 
-                // Anima el progreso hasta el porcentaje acumulado
-                elapsed += check.duration;
-                const target = elapsed / totalDuration;
-
-                Animated.timing(progress, {
-                  toValue: target,
-                  duration: check.duration,
-                  useNativeDriver: false,
-                }).start(() => {
-                  if (cancelled) return resolve();
-                  completeStep(idx);
-                  resolve();
-                });
-              })
-          ),
-        Promise.resolve()
-      ).then(() => {
-        if (!cancelled) {
-          // Breve pausa final antes de indicar que terminó
-          setTimeout(() => {
-            if (!cancelled) setFinished(true);
-          }, 400);
+        if (index === 1) {
+          success = await checkDatabaseConnection();
+          if (!success) setHasErrors(true);
         }
-      });
-    }, 600);
+
+        const elapsed = Date.now() - stepStart;
+        const remaining = Math.max(250, STEP_DURATION - elapsed);
+        await sleep(remaining);
+        if (cancelled) return;
+
+        completeStep(index, success);
+
+        Animated.timing(progress, {
+          toValue: (index + 1) / steps.length,
+          duration: 450,
+          useNativeDriver: false,
+        }).start();
+      }
+
+      await sleep(350);
+      if (!cancelled) setFinished(true);
+    };
+
+    run();
 
     return () => {
       cancelled = true;
-      clearTimeout(initialDelay);
     };
-  }, [completeStep, progress]);
+  }, [checkDatabaseConnection, completeStep, progress, steps.length]);
 
-  return { progress, steps, currentIndex, finished };
+  return { progress, steps, currentIndex, finished, hasErrors };
 }

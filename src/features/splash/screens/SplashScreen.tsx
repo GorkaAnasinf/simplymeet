@@ -13,27 +13,21 @@ import { useStartupChecks } from "../hooks/useStartupChecks";
 const { height: SCREEN_H } = Dimensions.get("window");
 
 interface SplashScreenProps {
-  /** Se invoca cuando todas las comprobaciones han finalizado */
   onFinished: () => void;
+  checkDatabaseConnection: () => Promise<boolean>;
 }
 
-/**
- * Splash Screen "Dark Cosmos"
- *
- * Simula comprobaciones de arranque con animaciones fluidas,
- * partículas flotantes, logo con glow y barra de progreso.
- */
-export function SplashScreen({ onFinished }: SplashScreenProps) {
-  const { progress, steps, currentIndex, finished } = useStartupChecks();
+export function SplashScreen({ onFinished, checkDatabaseConnection }: SplashScreenProps) {
+  const { progress, steps, currentIndex, finished, hasErrors } = useStartupChecks({
+    checkDatabaseConnection,
+  });
 
-  // Animaciones de entrada/salida globales
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const titleTranslateY = useRef(new Animated.Value(14)).current;
   const subtitleOpacity = useRef(new Animated.Value(0)).current;
   const screenOpacity = useRef(new Animated.Value(1)).current;
   const versionOpacity = useRef(new Animated.Value(0)).current;
 
-  // Entrada del título y subtítulo
   useEffect(() => {
     Animated.stagger(250, [
       Animated.parallel([
@@ -63,7 +57,6 @@ export function SplashScreen({ onFinished }: SplashScreenProps) {
     ]).start();
   }, [titleOpacity, titleTranslateY, subtitleOpacity, versionOpacity]);
 
-  // Fade‑out al terminar y notificar al padre
   useEffect(() => {
     if (!finished) return;
     Animated.timing(screenOpacity, {
@@ -78,56 +71,32 @@ export function SplashScreen({ onFinished }: SplashScreenProps) {
     <Animated.View style={[styles.root, { opacity: screenOpacity }]}>
       <StatusBar style="light" />
 
-      {/* Fondo degradado */}
       <LinearGradient
-        colors={[
-          splashColors.gradientStart,
-          splashColors.gradientMid,
-          splashColors.gradientEnd,
-        ]}
+        colors={[splashColors.gradientStart, splashColors.gradientMid, splashColors.gradientEnd]}
         locations={[0, 0.45, 1]}
         style={StyleSheet.absoluteFill}
       />
 
-      {/* Partículas flotantes */}
       <FloatingParticles />
 
-      {/* Contenido centrado */}
       <View style={styles.content}>
-        {/* Zona superior: Logo + títulos */}
         <View style={styles.brandArea}>
           <LogoGlow />
 
-          <Animated.Text
-            style={[
-              styles.title,
-              {
-                opacity: titleOpacity,
-                transform: [{ translateY: titleTranslateY }],
-              },
-            ]}
-          >
+          <Animated.Text style={[styles.title, { opacity: titleOpacity, transform: [{ translateY: titleTranslateY }] }]}>
             SimplyMeet
           </Animated.Text>
 
-          <Animated.Text
-            style={[styles.subtitle, { opacity: subtitleOpacity }]}
-          >
-            Tu agenda inteligente
-          </Animated.Text>
+          <Animated.Text style={[styles.subtitle, { opacity: subtitleOpacity }]}>Tu agenda inteligente</Animated.Text>
         </View>
 
-        {/* Zona inferior: progreso + pasos */}
         <View style={styles.progressArea}>
           <ProgressBar progress={progress} />
-
           <StepList steps={steps} currentIndex={currentIndex} />
+          {hasErrors ? <Text style={styles.warning}>No se pudo validar Odoo. Revisa la configuracion.</Text> : null}
         </View>
 
-        {/* Versión en la parte inferior */}
-        <Animated.Text style={[styles.version, { opacity: versionOpacity }]}>
-          v1.0.0
-        </Animated.Text>
+        <Animated.Text style={[styles.version, { opacity: versionOpacity }]}>v1.0.0</Animated.Text>
       </View>
     </Animated.View>
   );
@@ -154,7 +123,6 @@ const styles = StyleSheet.create({
     color: splashColors.textBright,
     letterSpacing: 1.5,
     marginTop: 8,
-    // Sombra suave para profundidad
     textShadowColor: "rgba(0,0,0,0.4)",
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 6,
@@ -168,6 +136,11 @@ const styles = StyleSheet.create({
   },
   progressArea: {
     alignItems: "center",
+  },
+  warning: {
+    marginTop: 10,
+    color: "#FCA5A5",
+    fontSize: 12,
   },
   version: {
     fontSize: 11,
