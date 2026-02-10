@@ -5,16 +5,18 @@
       "name": "Expo Android (Debug)",
       "type": "node-terminal",
       "request": "launch",
-      "command": "npm run android",
+      "command": "npx expo start -c --android",
       "cwd": "${workspaceFolder}",
-      "preLaunchTask": "Android: Start AVD Medium"
+      "preLaunchTask": "Android: Start AVD Medium",
+      "postDebugTask": "Expo: Stop Metro (Port 8081)"
     },
     {
       "name": "Expo Android (Dispositivo fisico)",
       "type": "node-terminal",
       "request": "launch",
-      "command": "npx expo start --android --host lan",
-      "cwd": "${workspaceFolder}"
+      "command": "npx expo start -c --android --host lan",
+      "cwd": "${workspaceFolder}",
+      "postDebugTask": "Expo: Stop Metro (Port 8081)"
     }
   ]
 }
