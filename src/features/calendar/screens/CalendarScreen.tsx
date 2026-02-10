@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -73,6 +73,7 @@ export function CalendarScreen() {
   const [meetingsLoading, setMeetingsLoading] = useState(false);
   const [meetingsError, setMeetingsError] = useState<string | null>(null);
   const [meetingsCache, setMeetingsCache] = useState<Record<string, ScheduleMeeting[]>>({});
+  const [isChangingDay, setIsChangingDay] = useState(false);
 
   const selectedDate = useMemo(() => addDays(new Date(), dayOffset), [dayOffset]);
   const selectedDateLabel = useMemo(() => toDisplayDate(selectedDate), [selectedDate]);
@@ -81,16 +82,18 @@ export function CalendarScreen() {
   const fetchMeetings = useCallback(async () => {
     if (!selectedEmployee) return;
     const cacheKey = `${selectedEmployee.id}:${selectedDateKey}`;
+    setMeetingsLoading(true);
+    setMeetingsError(null);
 
     // Reutiliza resultados ya consultados para evitar recargas al navegar entre dias visitados.
     if (meetingsCache[cacheKey]) {
       setMeetings(meetingsCache[cacheKey]);
-      setMeetingsError(null);
+      setMeetingsLoading(false);
+      setIsChangingDay(false);
       return;
     }
 
-    setMeetingsLoading(true);
-    setMeetingsError(null);
+    setMeetings([]);
 
     try {
       const rows = await getMeetingsForDay(selectedDate);
@@ -103,6 +106,7 @@ export function CalendarScreen() {
       setMeetings([]);
     } finally {
       setMeetingsLoading(false);
+      setIsChangingDay(false);
     }
   }, [getMeetingsForDay, meetingsCache, selectedDate, selectedDateKey, selectedEmployee]);
 
@@ -162,11 +166,22 @@ export function CalendarScreen() {
             <>
               <DayNavigator
                 dateLabel={selectedDateLabel}
-                onPreviousDay={() => setDayOffset((value) => value - 1)}
-                onNextDay={() => setDayOffset((value) => value + 1)}
+                onPreviousDay={() => {
+                  setIsChangingDay(true);
+                  setDayOffset((value) => value - 1);
+                }}
+                onNextDay={() => {
+                  setIsChangingDay(true);
+                  setDayOffset((value) => value + 1);
+                }}
               />
 
-              {meetingsLoading ? <Text style={styles.info}>Cargando reuniones...</Text> : null}
+              {meetingsLoading || isChangingDay ? (
+                <View style={styles.loadingRow}>
+                  <ActivityIndicator size="small" color={splashColors.glowLight} />
+                  <Text style={styles.info}>Cargando reuniones...</Text>
+                </View>
+              ) : null}
               {meetingsError ? <Text style={styles.error}>{meetingsError}</Text> : null}
 
               <DayScheduleCard meetings={meetings} startHour={8} endHour={20} />
@@ -208,6 +223,11 @@ const styles = StyleSheet.create({
   info: {
     color: splashColors.textSubtle,
     fontSize: 13,
+  },
+  loadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   error: {
     color: "#FCA5A5",
