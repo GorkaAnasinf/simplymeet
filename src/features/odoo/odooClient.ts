@@ -11,6 +11,21 @@ type JsonRpcResponse<T> = {
 
 let requestId = 1;
 
+function pad(value: number) {
+  return String(value).padStart(2, "0");
+}
+
+function toOdooDatetime(date: Date) {
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const hours = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+  const seconds = pad(date.getSeconds());
+  // Odoo espera datetime "naive" sin zona horaria.
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
+
 async function callJsonRpc<T>(params: Record<string, unknown>) {
   if (!isOdooConfigured()) {
     throw new Error("Configura EXPO_PUBLIC_ODOO_URL, DB, USERNAME y PASSWORD.");
@@ -115,13 +130,13 @@ export async function listMeetingsForDay(userId: number, day: Date) {
   const start = new Date(day);
   start.setHours(0, 0, 0, 0);
   const end = new Date(day);
-  end.setHours(23, 59, 59, 999);
+  end.setHours(23, 59, 59, 0);
 
   const rows = await executeKw<RawMeeting[]>(
     uid,
     "calendar.event",
     "search_read",
-    [[["user_id", "=", userId], ["start", ">=", start.toISOString()], ["start", "<=", end.toISOString()]]],
+    [[["user_id", "=", userId], ["start", ">=", toOdooDatetime(start)], ["start", "<=", toOdooDatetime(end)]]],
     {
       fields: ["id", "name", "start", "stop"],
       order: "start asc",
