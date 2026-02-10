@@ -47,6 +47,13 @@ function toScheduleMeeting(meeting: OdooMeeting): ScheduleMeeting {
   };
 }
 
+function toDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export function CalendarScreen() {
   const {
     configured,
@@ -65,18 +72,31 @@ export function CalendarScreen() {
   const [meetings, setMeetings] = useState<ScheduleMeeting[]>([]);
   const [meetingsLoading, setMeetingsLoading] = useState(false);
   const [meetingsError, setMeetingsError] = useState<string | null>(null);
+  const [meetingsCache, setMeetingsCache] = useState<Record<string, ScheduleMeeting[]>>({});
 
   const selectedDate = useMemo(() => addDays(new Date(), dayOffset), [dayOffset]);
   const selectedDateLabel = useMemo(() => toDisplayDate(selectedDate), [selectedDate]);
+  const selectedDateKey = useMemo(() => toDateKey(selectedDate), [selectedDate]);
 
   const fetchMeetings = useCallback(async () => {
     if (!selectedEmployee) return;
+    const cacheKey = `${selectedEmployee.id}:${selectedDateKey}`;
+
+    // Reutiliza resultados ya consultados para evitar recargas al navegar entre dias visitados.
+    if (meetingsCache[cacheKey]) {
+      setMeetings(meetingsCache[cacheKey]);
+      setMeetingsError(null);
+      return;
+    }
+
     setMeetingsLoading(true);
     setMeetingsError(null);
 
     try {
       const rows = await getMeetingsForDay(selectedDate);
-      setMeetings(rows.map(toScheduleMeeting));
+      const parsed = rows.map(toScheduleMeeting);
+      setMeetings(parsed);
+      setMeetingsCache((prev) => ({ ...prev, [cacheKey]: parsed }));
     } catch (error) {
       const message = error instanceof Error ? error.message : "No se pudieron cargar las reuniones.";
       setMeetingsError(message);
@@ -84,7 +104,7 @@ export function CalendarScreen() {
     } finally {
       setMeetingsLoading(false);
     }
-  }, [getMeetingsForDay, selectedDate, selectedEmployee]);
+  }, [getMeetingsForDay, meetingsCache, selectedDate, selectedDateKey, selectedEmployee]);
 
   useEffect(() => {
     if (selectedEmployee) return;
@@ -118,6 +138,7 @@ export function CalendarScreen() {
                 onChangeUser={async () => {
                   setMenuOpen(false);
                   setMeetings([]);
+                  setMeetingsCache({});
                   await clearSelectedEmployee();
                   await loadEmployees();
                 }}

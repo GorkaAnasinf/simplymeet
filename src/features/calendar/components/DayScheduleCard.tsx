@@ -28,10 +28,19 @@ function isHourOccupied(hour: number, meetings: Meeting[]) {
   const from = hour * 60;
   const to = (hour + 1) * 60;
   // Marca la hora como ocupada cuando existe solape parcial o total con una reunion.
-  return meetings.filter((meeting) => {
+  return meetings.some((meeting) => {
     const meetingStart = toMinutes(meeting.start);
     const meetingEnd = toMinutes(meeting.end);
     return meetingStart < to && meetingEnd > from;
+  });
+}
+
+function meetingsStartingInHour(hour: number, meetings: Meeting[]) {
+  const from = hour * 60;
+  const to = (hour + 1) * 60;
+  return meetings.filter((meeting) => {
+    const meetingStart = toMinutes(meeting.start);
+    return meetingStart >= from && meetingStart < to;
   });
 }
 
@@ -45,21 +54,23 @@ export function DayScheduleCard({ meetings, startHour, endHour }: DayScheduleCar
 
       <View style={styles.grid}>
         {hours.map((hour) => {
-          const occupiedMeetings = isHourOccupied(hour, meetings);
-          const occupied = occupiedMeetings.length > 0;
+          const occupied = isHourOccupied(hour, meetings);
+          const startingMeetings = meetingsStartingInHour(hour, meetings);
 
           return (
             <View key={hour} style={[styles.row, occupied && styles.rowOccupied]}>
               <Text style={styles.hourLabel}>{formatHour(hour)}</Text>
               <View style={styles.content}>
-                {occupied ? (
-                  occupiedMeetings.map((meeting) => (
+                {startingMeetings.length > 0 ? (
+                  startingMeetings.map((meeting) => (
                     <View key={meeting.id} style={styles.meetingBadge}>
                       <Text style={styles.meetingText}>
                         {meeting.start}-{meeting.end} {meeting.title}
                       </Text>
                     </View>
                   ))
+                ) : occupied ? (
+                  <Text style={styles.continuesText}>Bloque ocupado (continuacion)</Text>
                 ) : (
                   <Text style={styles.emptyText}>Libre</Text>
                 )}
@@ -118,6 +129,11 @@ const styles = StyleSheet.create({
   emptyText: {
     color: splashColors.textSubtle,
     fontSize: 13,
+  },
+  continuesText: {
+    color: splashColors.textMuted,
+    fontSize: 12,
+    fontStyle: "italic",
   },
   meetingBadge: {
     paddingVertical: 6,
