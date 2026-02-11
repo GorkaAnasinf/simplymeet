@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -85,46 +85,60 @@ export function CalendarScreen() {
   const selectedDateLabel = useMemo(() => toDisplayDate(selectedDate), [selectedDate]);
   const selectedDateKey = useMemo(() => toDateKey(selectedDate), [selectedDate]);
 
-  const fetchMeetings = useCallback(async () => {
-    if (!selectedEmployee) return;
-    const cacheKey = `${selectedEmployee.id}:${selectedDateKey}`;
-    setMeetingsLoading(true);
-    setMeetingsError(null);
-
-    // Reutiliza resultados ya consultados para evitar recargas al navegar entre dias visitados.
-    if (meetingsCache[cacheKey]) {
-      setMeetings(meetingsCache[cacheKey]);
-      setMeetingsLoading(false);
-      setIsChangingDay(false);
-      return;
-    }
-
-    setMeetings([]);
-
-    try {
-      const rows = await getMeetingsForDay(selectedDate);
-      const parsed = rows.map(toScheduleMeeting);
-      setMeetings(parsed);
-      setMeetingsCache((prev) => ({ ...prev, [cacheKey]: parsed }));
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "No se pudieron cargar las reuniones.";
-      setMeetingsError(message);
-      setMeetings([]);
-    } finally {
-      setMeetingsLoading(false);
-      setIsChangingDay(false);
-    }
-  }, [getMeetingsForDay, meetingsCache, selectedDate, selectedDateKey, selectedEmployee]);
-
   useEffect(() => {
     if (selectedEmployee) return;
     loadEmployees();
   }, [loadEmployees, selectedEmployee]);
 
   useEffect(() => {
-    if (!selectedEmployee) return;
-    fetchMeetings();
-  }, [fetchMeetings, selectedEmployee]);
+    if (!selectedEmployee) {
+      setMeetingsLoading(false);
+      setIsChangingDay(false);
+      return;
+    }
+
+    let cancelled = false;
+    const cacheKey = `${selectedEmployee.id}:${selectedDateKey}`;
+
+    const run = async () => {
+      setMeetingsError(null);
+
+      // Reutiliza resultados ya consultados para evitar recargas al navegar entre dias visitados.
+      if (meetingsCache[cacheKey]) {
+        if (cancelled) return;
+        setMeetings(meetingsCache[cacheKey]);
+        setMeetingsLoading(false);
+        setIsChangingDay(false);
+        return;
+      }
+
+      setMeetingsLoading(true);
+      setMeetings([]);
+
+      try {
+        const rows = await getMeetingsForDay(selectedDate);
+        if (cancelled) return;
+        const parsed = rows.map(toScheduleMeeting);
+        setMeetings(parsed);
+        setMeetingsCache((prev) => ({ ...prev, [cacheKey]: parsed }));
+      } catch (error) {
+        if (cancelled) return;
+        const message = error instanceof Error ? error.message : "No se pudieron cargar las reuniones.";
+        setMeetingsError(message);
+        setMeetings([]);
+      } finally {
+        if (cancelled) return;
+        setMeetingsLoading(false);
+        setIsChangingDay(false);
+      }
+    };
+
+    run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [getMeetingsForDay, meetingsCache, selectedDate, selectedDateKey, selectedEmployee]);
 
   return (
     <View style={styles.root}>

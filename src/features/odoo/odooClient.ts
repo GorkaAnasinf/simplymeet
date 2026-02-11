@@ -10,6 +10,7 @@ type JsonRpcResponse<T> = {
 };
 
 let requestId = 1;
+const RPC_TIMEOUT_MS = 15000;
 
 function pad(value: number) {
   return String(value).padStart(2, "0");
@@ -32,16 +33,30 @@ async function callJsonRpc<T>(params: Record<string, unknown>) {
   }
 
   const endpoint = `${odooConfig.url}/jsonrpc`;
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      jsonrpc: "2.0",
-      method: "call",
-      params,
-      id: requestId++,
-    }),
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), RPC_TIMEOUT_MS);
+
+  let response: Response;
+  try {
+    response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        method: "call",
+        params,
+        id: requestId++,
+      }),
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error("Tiempo de espera agotado al consultar Odoo. Intenta de nuevo.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!response.ok) {
     throw new Error(`Odoo devolvio HTTP ${response.status}.`);
