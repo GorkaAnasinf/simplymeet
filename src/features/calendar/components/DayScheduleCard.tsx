@@ -17,6 +17,8 @@ type DayScheduleCardProps = {
 };
 
 const LONG_MEETING_THRESHOLD_MINUTES = 120;
+const HOUR_ROW_HEIGHT = 56;
+const MIN_CHIP_HEIGHT = 36;
 
 type MeetingWindow = Meeting & {
   startMinutes: number;
@@ -57,28 +59,10 @@ function isHourOccupied(hour: number, meetings: MeetingWindow[]) {
   });
 }
 
-function meetingsStartingAtHour(hour: number, meetings: MeetingWindow[]) {
-  const from = hour * 60;
-  const to = (hour + 1) * 60;
-  return meetings.filter((meeting) => {
-    return meeting.startMinutes >= from && meeting.startMinutes < to;
-  });
-}
-
 function meetingsOverlappingHour(hour: number, meetings: MeetingWindow[]) {
   const from = hour * 60;
   const to = (hour + 1) * 60;
   return meetings.filter((meeting) => meeting.startMinutes < to && meeting.endMinutes > from);
-}
-
-function continuesFromPreviousHour(hour: number, meetings: MeetingWindow[]) {
-  const boundary = hour * 60;
-  return meetings.some((meeting) => meeting.startMinutes < boundary && meeting.endMinutes > boundary);
-}
-
-function continuesToNextHour(hour: number, meetings: MeetingWindow[]) {
-  const boundary = (hour + 1) * 60;
-  return meetings.some((meeting) => meeting.startMinutes < boundary && meeting.endMinutes > boundary);
 }
 
 function formatMeetingHeadline(meeting: MeetingWindow) {
@@ -89,8 +73,18 @@ function formatMeetingHeadline(meeting: MeetingWindow) {
   return `${base} (${toDurationLabel(meeting.durationMinutes)})`;
 }
 
+function toChipTop(startMinutes: number, timelineStartMinutes: number) {
+  return ((startMinutes - timelineStartMinutes) / 60) * HOUR_ROW_HEIGHT;
+}
+
+function toChipHeight(durationMinutes: number) {
+  return Math.max((durationMinutes / 60) * HOUR_ROW_HEIGHT, MIN_CHIP_HEIGHT);
+}
+
 export function DayScheduleCard({ meetings, startHour, endHour }: DayScheduleCardProps) {
   const [expandedHour, setExpandedHour] = useState<number | null>(null);
+  const timelineStartMinutes = startHour * 60;
+  const timelineEndMinutes = (endHour + 1) * 60;
   const parsedMeetings = useMemo<MeetingWindow[]>(
     () =>
       meetings
@@ -108,75 +102,76 @@ export function DayScheduleCard({ meetings, startHour, endHour }: DayScheduleCar
     [meetings],
   );
   const hours = Array.from({ length: endHour - startHour + 1 }, (_, index) => startHour + index);
+  const expandedMeetings = expandedHour === null ? [] : meetingsOverlappingHour(expandedHour, parsedMeetings);
+  const timelineHeight = hours.length * HOUR_ROW_HEIGHT;
 
   return (
     <View style={styles.card}>
       <Text style={styles.title}>Agenda del dia</Text>
-      <Text style={styles.description}>Horario por horas y tramos ocupados por reuniones.</Text>
+      <Text style={styles.description}>Pulsa una franja ocupada para ver detalles.</Text>
 
       <View style={styles.grid}>
-        {hours.map((hour) => {
-          const occupied = isHourOccupied(hour, parsedMeetings);
-          const startingMeetings = meetingsStartingAtHour(hour, parsedMeetings);
-          const overlappingMeetings = meetingsOverlappingHour(hour, parsedMeetings);
-          const fromPreviousHour = continuesFromPreviousHour(hour, parsedMeetings);
-          const toNextHour = continuesToNextHour(hour, parsedMeetings);
-          const isExpanded = expandedHour === hour;
-          const isPressable = occupied;
-
-          return (
-            <Pressable
-              key={hour}
-              style={[styles.row, occupied && styles.rowOccupied]}
-              disabled={!isPressable}
-              onPress={() => {
-                setExpandedHour((current) => (current === hour ? null : hour));
-              }}
-            >
-              <Text style={styles.hourLabel}>{formatHour(hour)}</Text>
-              <View style={styles.slotArea}>
-                {occupied ? (
-                  <View
-                    style={[
-                      styles.occupancyLine,
-                      fromPreviousHour && styles.occupancyLineFromPrevious,
-                      toNextHour && styles.occupancyLineToNext,
-                      fromPreviousHour && toNextHour && styles.occupancyLineMiddle,
-                    ]}
-                  />
-                ) : null}
+        <View style={styles.rowsLayer}>
+          {hours.map((hour) => {
+            const occupied = isHourOccupied(hour, parsedMeetings);
+            const isExpanded = expandedHour === hour;
+            return (
+              <Pressable
+                key={hour}
+                style={[styles.row, occupied && styles.rowOccupied, isExpanded && styles.rowExpanded]}
+                disabled={!occupied}
+                onPress={() => {
+                  setExpandedHour((current) => (current === hour ? null : hour));
+                }}
+              >
+                <Text style={styles.hourLabel}>{formatHour(hour)}</Text>
                 <View style={styles.content}>
-                  {startingMeetings.length > 0 ? (
-                    startingMeetings.map((meeting) => (
-                      <View key={`${meeting.id}-${hour}`} style={styles.meetingBadge}>
-                        <Text style={styles.meetingText}>{formatMeetingHeadline(meeting)}</Text>
-                      </View>
-                    ))
-                  ) : occupied ? (
-                    <Text style={styles.continuationText}>Ocupado</Text>
-                  ) : (
-                    <Text style={styles.emptyText}>Libre</Text>
-                  )}
+                  <Text style={occupied ? styles.continuationText : styles.emptyText}>{occupied ? "Ocupado" : "Libre"}</Text>
                   {occupied ? <Text style={styles.tapHint}>{isExpanded ? "Ocultar detalles" : "Ver detalles"}</Text> : null}
-                  {isExpanded ? (
-                    <View style={styles.detailsCard}>
-                      <Text style={styles.detailsTitle}>Detalles de la franja</Text>
-                      {overlappingMeetings.map((meeting) => (
-                        <View key={`details-${meeting.id}-${hour}`} style={styles.detailsRow}>
-                          <Text style={styles.detailsMeetingTitle}>{meeting.title}</Text>
-                          <Text style={styles.detailsMeetingTime}>
-                            {meeting.start}-{meeting.end} · {toDurationLabel(meeting.durationMinutes)}
-                          </Text>
-                        </View>
-                      ))}
-                    </View>
-                  ) : null}
                 </View>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        <View pointerEvents="none" style={[styles.meetingsLayer, { height: timelineHeight }]}>
+          {parsedMeetings.map((meeting) => {
+            const clampedStart = Math.max(meeting.startMinutes, timelineStartMinutes);
+            const clampedEnd = Math.min(meeting.endMinutes, timelineEndMinutes);
+            const clampedDuration = Math.max(0, clampedEnd - clampedStart);
+            if (clampedDuration === 0) return null;
+
+            return (
+              <View
+                key={`chip-${meeting.id}`}
+                style={[
+                  styles.meetingChip,
+                  {
+                    top: toChipTop(clampedStart, timelineStartMinutes),
+                    height: toChipHeight(clampedDuration),
+                  },
+                ]}
+              >
+                <Text style={styles.meetingText}>{formatMeetingHeadline(meeting)}</Text>
               </View>
-            </Pressable>
-          );
-        })}
+            );
+          })}
+        </View>
       </View>
+
+      {expandedHour !== null ? (
+        <View style={styles.detailsCard}>
+          <Text style={styles.detailsTitle}>Detalles de {formatHour(expandedHour)}</Text>
+          {expandedMeetings.map((meeting) => (
+            <View key={`details-${meeting.id}-${expandedHour}`} style={styles.detailsRow}>
+              <Text style={styles.detailsMeetingTitle}>{meeting.title}</Text>
+              <Text style={styles.detailsMeetingTime}>
+                {meeting.start}-{meeting.end} · {toDurationLabel(meeting.durationMinutes)}
+              </Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -201,18 +196,31 @@ const styles = StyleSheet.create({
   },
   grid: {
     marginTop: 10,
-    gap: 0,
+    position: "relative",
+  },
+  rowsLayer: {
+    zIndex: 1,
+  },
+  meetingsLayer: {
+    position: "absolute",
+    left: 66,
+    right: 0,
+    zIndex: 2,
   },
   row: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 12,
-    paddingVertical: 8,
+    height: HOUR_ROW_HEIGHT,
+    paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: "rgba(255,255,255,0.08)",
   },
   rowOccupied: {
     borderTopColor: "rgba(14,165,233,0.45)",
+  },
+  rowExpanded: {
+    backgroundColor: "rgba(14,165,233,0.08)",
   },
   hourLabel: {
     width: 54,
@@ -223,31 +231,6 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     gap: 6,
-  },
-  slotArea: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "stretch",
-    gap: 8,
-  },
-  occupancyLine: {
-    width: 4,
-    borderRadius: 8,
-    backgroundColor: "rgba(14, 165, 233, 0.85)",
-  },
-  occupancyLineFromPrevious: {
-    borderTopLeftRadius: 0,
-    borderTopRightRadius: 0,
-    marginTop: -8,
-  },
-  occupancyLineToNext: {
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
-    marginBottom: -8,
-  },
-  occupancyLineMiddle: {
-    marginTop: -8,
-    marginBottom: -8,
   },
   emptyText: {
     color: splashColors.textSubtle,
@@ -270,8 +253,20 @@ const styles = StyleSheet.create({
     color: splashColors.textSubtle,
     fontSize: 12,
   },
+  meetingChip: {
+    position: "absolute",
+    left: 10,
+    right: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    backgroundColor: "rgba(14, 165, 233, 0.16)",
+    borderWidth: 1,
+    borderColor: splashColors.glowSoft,
+    justifyContent: "center",
+  },
   detailsCard: {
-    marginTop: 4,
+    marginTop: 10,
     padding: 10,
     borderRadius: 10,
     backgroundColor: "rgba(14, 165, 233, 0.10)",

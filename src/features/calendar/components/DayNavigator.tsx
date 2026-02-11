@@ -6,19 +6,21 @@ type DayNavigatorProps = {
   dateLabel: string;
   onPreviousDay: () => void;
   onNextDay: () => void;
+  onOpenDatePicker: () => void;
 };
 
-export function DayNavigator({ dateLabel, onPreviousDay, onNextDay }: DayNavigatorProps) {
+export function DayNavigator({ dateLabel, onPreviousDay, onNextDay, onOpenDatePicker }: DayNavigatorProps) {
   return (
     <View style={styles.container}>
       <Pressable onPress={onPreviousDay} style={styles.button}>
         <Text style={styles.buttonLabel}>{"<"}</Text>
       </Pressable>
 
-      <View style={styles.center}>
+      <Pressable style={styles.center} onPress={onOpenDatePicker}>
         <Text style={styles.subtitle}>Vista diaria</Text>
         <Text style={styles.dateLabel}>{dateLabel}</Text>
-      </View>
+        <Text style={styles.helper}>Toca para elegir fecha</Text>
+      </Pressable>
 
       <Pressable onPress={onNextDay} style={styles.button}>
         <Text style={styles.buttonLabel}>{">"}</Text>
@@ -49,6 +51,11 @@ const styles = StyleSheet.create({
     color: splashColors.textBright,
     fontSize: 21,
     fontWeight: "700",
+    textTransform: "capitalize",
+  },
+  helper: {
+    color: splashColors.textSubtle,
+    fontSize: 11,
   },
   button: {
     width: 44,

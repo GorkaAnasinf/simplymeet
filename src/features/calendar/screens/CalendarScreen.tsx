@@ -7,6 +7,7 @@ import { useOdoo } from "../../odoo/OdooContext";
 import { OdooMeeting } from "../../odoo/types";
 import { FloatingParticles } from "../../splash/components/FloatingParticles";
 import { splashColors } from "../../splash/theme/splashColors";
+import { CalendarPickerModal } from "../components/CalendarPickerModal";
 import { DayNavigator } from "../components/DayNavigator";
 import { DayScheduleCard } from "../components/DayScheduleCard";
 import { EmployeeSelectorCard } from "../components/EmployeeSelectorCard";
@@ -22,6 +23,7 @@ type ScheduleMeeting = {
 function addDays(date: Date, amount: number) {
   const next = new Date(date);
   next.setDate(next.getDate() + amount);
+  next.setHours(0, 0, 0, 0);
   return next;
 }
 
@@ -67,15 +69,19 @@ export function CalendarScreen() {
     getMeetingsForDay,
   } = useOdoo();
 
-  const [dayOffset, setDayOffset] = useState(0);
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+  });
   const [menuOpen, setMenuOpen] = useState(false);
+  const [calendarVisible, setCalendarVisible] = useState(false);
   const [meetings, setMeetings] = useState<ScheduleMeeting[]>([]);
   const [meetingsLoading, setMeetingsLoading] = useState(false);
   const [meetingsError, setMeetingsError] = useState<string | null>(null);
   const [meetingsCache, setMeetingsCache] = useState<Record<string, ScheduleMeeting[]>>({});
   const [isChangingDay, setIsChangingDay] = useState(false);
 
-  const selectedDate = useMemo(() => addDays(new Date(), dayOffset), [dayOffset]);
   const selectedDateLabel = useMemo(() => toDisplayDate(selectedDate), [selectedDate]);
   const selectedDateKey = useMemo(() => toDateKey(selectedDate), [selectedDate]);
 
@@ -168,12 +174,13 @@ export function CalendarScreen() {
                 dateLabel={selectedDateLabel}
                 onPreviousDay={() => {
                   setIsChangingDay(true);
-                  setDayOffset((value) => value - 1);
+                  setSelectedDate((value) => addDays(value, -1));
                 }}
                 onNextDay={() => {
                   setIsChangingDay(true);
-                  setDayOffset((value) => value + 1);
+                  setSelectedDate((value) => addDays(value, 1));
                 }}
+                onOpenDatePicker={() => setCalendarVisible(true)}
               />
 
               {meetingsLoading || isChangingDay ? (
@@ -189,6 +196,17 @@ export function CalendarScreen() {
           )}
         </ScrollView>
       </SafeAreaView>
+
+      <CalendarPickerModal
+        visible={calendarVisible}
+        selectedDate={selectedDate}
+        onClose={() => setCalendarVisible(false)}
+        onSelectDate={(date) => {
+          setIsChangingDay(true);
+          setSelectedDate(addDays(date, 0));
+          setCalendarVisible(false);
+        }}
+      />
     </View>
   );
 }
