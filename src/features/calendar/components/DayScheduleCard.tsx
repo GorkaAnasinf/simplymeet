@@ -35,13 +35,12 @@ function isHourOccupied(hour: number, meetings: Meeting[]) {
   });
 }
 
-function meetingsOverlappingHour(hour: number, meetings: Meeting[]) {
+function meetingsStartingAtHour(hour: number, meetings: Meeting[]) {
   const from = hour * 60;
   const to = (hour + 1) * 60;
   return meetings.filter((meeting) => {
     const meetingStart = toMinutes(meeting.start);
-    const meetingEnd = toMinutes(meeting.end);
-    return meetingStart < to && meetingEnd > from;
+    return meetingStart >= from && meetingStart < to;
   });
 }
 
@@ -56,29 +55,20 @@ export function DayScheduleCard({ meetings, startHour, endHour }: DayScheduleCar
       <View style={styles.grid}>
         {hours.map((hour) => {
           const occupied = isHourOccupied(hour, meetings);
-          const hourMeetings = meetingsOverlappingHour(hour, meetings);
-          const hourFrom = hour * 60;
+          const startingMeetings = meetingsStartingAtHour(hour, meetings);
 
           return (
             <View key={hour} style={[styles.row, occupied && styles.rowOccupied]}>
               <Text style={styles.hourLabel}>{formatHour(hour)}</Text>
               <View style={styles.content}>
-                {hourMeetings.length > 0 ? (
-                  hourMeetings.map((meeting) => {
-                    const startsInThisHour = toMinutes(meeting.start) >= hourFrom;
-                    return (
-                      <View
-                        key={`${meeting.id}-${hour}`}
-                        style={[styles.meetingBadge, !startsInThisHour && styles.meetingContinuationBadge]}
-                      >
-                      <Text style={styles.meetingText}>
-                        {startsInThisHour
-                          ? `${meeting.start}-${meeting.end} ${meeting.title}`
-                          : `${meeting.title} (continua)`}
-                      </Text>
+                {startingMeetings.length > 0 ? (
+                  startingMeetings.map((meeting) => (
+                    <View key={`${meeting.id}-${hour}`} style={styles.meetingBadge}>
+                      <Text style={styles.meetingText}>{`${meeting.start}-${meeting.end} ${meeting.title}`}</Text>
                     </View>
-                    );
-                  })
+                  ))
+                ) : occupied ? (
+                  <Text style={styles.continuationText}>Ocupado</Text>
                 ) : (
                   <Text style={styles.emptyText}>Libre</Text>
                 )}
@@ -146,9 +136,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: splashColors.glowSoft,
   },
-  meetingContinuationBadge: {
-    backgroundColor: "rgba(14, 165, 233, 0.10)",
-    borderColor: "rgba(14, 165, 233, 0.25)",
+  continuationText: {
+    color: splashColors.textSubtle,
+    fontSize: 13,
+    fontStyle: "italic",
   },
   meetingText: {
     color: splashColors.textBright,
