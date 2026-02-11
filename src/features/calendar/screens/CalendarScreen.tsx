@@ -18,6 +18,11 @@ type ScheduleMeeting = {
   title: string;
   start: string;
   end: string;
+  organizer?: string;
+  attendees: string[];
+  meetingUrl?: string;
+  location?: string;
+  description?: string;
 };
 
 function addDays(date: Date, amount: number) {
@@ -46,6 +51,11 @@ function toScheduleMeeting(meeting: OdooMeeting): ScheduleMeeting {
     title: meeting.title,
     start: toHourMinute(meeting.start),
     end: toHourMinute(meeting.end),
+    organizer: meeting.organizer,
+    attendees: meeting.attendees,
+    meetingUrl: meeting.meetingUrl,
+    location: meeting.location,
+    description: meeting.description,
   };
 }
 
@@ -205,7 +215,7 @@ export function CalendarScreen() {
               ) : null}
               {meetingsError ? <Text style={styles.error}>{meetingsError}</Text> : null}
 
-              <DayScheduleCard meetings={meetings} startHour={8} endHour={20} />
+              <DayScheduleCard date={selectedDate} meetings={meetings} startHour={8} endHour={20} />
             </>
           )}
         </ScrollView>

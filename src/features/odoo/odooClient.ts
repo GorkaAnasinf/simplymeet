@@ -109,6 +109,16 @@ type RawMeeting = {
   name: string;
   start: string;
   stop: string;
+  user_id?: [number, string] | false;
+  partner_ids?: number[];
+  location?: string | false;
+  videocall_location?: string | false;
+  description?: string | false;
+};
+
+type RawPartner = {
+  id: number;
+  name: string;
 };
 
 export async function checkOdooConnection() {
@@ -153,16 +163,38 @@ export async function listMeetingsForDay(userId: number, day: Date) {
     "search_read",
     [[["user_id", "=", userId], ["start", ">=", toOdooDatetime(start)], ["start", "<=", toOdooDatetime(end)]]],
     {
-      fields: ["id", "name", "start", "stop"],
+      fields: ["id", "name", "start", "stop", "user_id", "partner_ids", "location", "videocall_location", "description"],
       order: "start asc",
       limit: 200,
     }
   );
+
+  const partnerIds = Array.from(new Set(rows.flatMap((row) => row.partner_ids ?? [])));
+  let partnerMap = new Map<number, string>();
+
+  if (partnerIds.length > 0) {
+    const partners = await executeKw<RawPartner[]>(
+      uid,
+      "res.partner",
+      "search_read",
+      [[["id", "in", partnerIds]]],
+      {
+        fields: ["id", "name"],
+        limit: 500,
+      }
+    );
+    partnerMap = new Map(partners.map((partner) => [partner.id, partner.name]));
+  }
 
   return rows.map<OdooMeeting>((row) => ({
     id: row.id,
     title: row.name,
     start: row.start,
     end: row.stop,
+    organizer: row.user_id ? row.user_id[1] : undefined,
+    attendees: (row.partner_ids ?? []).map((partnerId) => partnerMap.get(partnerId)).filter((name): name is string => Boolean(name)),
+    meetingUrl: row.videocall_location || undefined,
+    location: row.location || undefined,
+    description: row.description || undefined,
   }));
 }

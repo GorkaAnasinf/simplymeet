@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { splashColors } from "../../splash/theme/splashColors";
 
@@ -8,9 +8,15 @@ type Meeting = {
   title: string;
   start: string;
   end: string;
+  organizer?: string;
+  attendees: string[];
+  meetingUrl?: string;
+  location?: string;
+  description?: string;
 };
 
 type DayScheduleCardProps = {
+  date: Date;
   meetings: Meeting[];
   startHour: number;
   endHour: number;
@@ -35,14 +41,8 @@ function toDurationLabel(durationMinutes: number) {
   const hours = Math.floor(durationMinutes / 60);
   const minutes = durationMinutes % 60;
 
-  if (hours > 0 && minutes > 0) {
-    return `${hours}h ${minutes}m`;
-  }
-
-  if (hours > 0) {
-    return `${hours}h`;
-  }
-
+  if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
+  if (hours > 0) return `${hours}h`;
   return `${minutes}m`;
 }
 
@@ -50,26 +50,9 @@ function formatHour(hour: number) {
   return `${String(hour).padStart(2, "0")}:00`;
 }
 
-function isHourOccupied(hour: number, meetings: MeetingWindow[]) {
-  const from = hour * 60;
-  const to = (hour + 1) * 60;
-  // Marca la hora como ocupada cuando existe solape parcial o total con una reunion.
-  return meetings.some((meeting) => {
-    return meeting.startMinutes < to && meeting.endMinutes > from;
-  });
-}
-
-function meetingsOverlappingHour(hour: number, meetings: MeetingWindow[]) {
-  const from = hour * 60;
-  const to = (hour + 1) * 60;
-  return meetings.filter((meeting) => meeting.startMinutes < to && meeting.endMinutes > from);
-}
-
 function formatMeetingHeadline(meeting: MeetingWindow) {
   const base = `${meeting.start}-${meeting.end} ${meeting.title}`;
-  if (meeting.durationMinutes < LONG_MEETING_THRESHOLD_MINUTES) {
-    return base;
-  }
+  if (meeting.durationMinutes < LONG_MEETING_THRESHOLD_MINUTES) return base;
   return `${base} (${toDurationLabel(meeting.durationMinutes)})`;
 }
 
@@ -81,10 +64,20 @@ function toChipHeight(durationMinutes: number) {
   return Math.max((durationMinutes / 60) * HOUR_ROW_HEIGHT, MIN_CHIP_HEIGHT);
 }
 
-export function DayScheduleCard({ meetings, startHour, endHour }: DayScheduleCardProps) {
-  const [expandedHour, setExpandedHour] = useState<number | null>(null);
+function isSameDay(a: Date, b: Date) {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+
+function toNowMinutes() {
+  const now = new Date();
+  return now.getHours() * 60 + now.getMinutes();
+}
+
+export function DayScheduleCard({ date, meetings, startHour, endHour }: DayScheduleCardProps) {
+  const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(null);
   const timelineStartMinutes = startHour * 60;
   const timelineEndMinutes = (endHour + 1) * 60;
+
   const parsedMeetings = useMemo<MeetingWindow[]>(
     () =>
       meetings
@@ -101,75 +94,107 @@ export function DayScheduleCard({ meetings, startHour, endHour }: DayScheduleCar
         .sort((a, b) => a.startMinutes - b.startMinutes),
     [meetings],
   );
+
   const hours = Array.from({ length: endHour - startHour + 1 }, (_, index) => startHour + index);
-  const expandedMeetings = expandedHour === null ? [] : meetingsOverlappingHour(expandedHour, parsedMeetings);
   const timelineHeight = hours.length * HOUR_ROW_HEIGHT;
+  const selectedMeeting = selectedMeetingId ? parsedMeetings.find((meeting) => meeting.id === selectedMeetingId) ?? null : null;
+
+  const now = new Date();
+  const isCurrentDay = isSameDay(date, now);
+  const isPastDay = date < new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const nowMinutes = toNowMinutes();
+  const showNowLine = isCurrentDay && nowMinutes >= timelineStartMinutes && nowMinutes <= timelineEndMinutes;
+  const nowLineTop = showNowLine ? toChipTop(nowMinutes, timelineStartMinutes) : 0;
 
   return (
     <View style={styles.card}>
       <Text style={styles.title}>Agenda del dia</Text>
-      <Text style={styles.description}>Pulsa una franja ocupada para ver detalles.</Text>
+      <Text style={styles.description}>Pulsa en "Ver detalles" dentro de cada reunion.</Text>
 
       <View style={styles.grid}>
         <View style={styles.rowsLayer}>
           {hours.map((hour) => {
-            const occupied = isHourOccupied(hour, parsedMeetings);
-            const isExpanded = expandedHour === hour;
+            const from = hour * 60;
+            const to = (hour + 1) * 60;
+            const occupied = parsedMeetings.some((meeting) => meeting.startMinutes < to && meeting.endMinutes > from);
             return (
-              <Pressable
-                key={hour}
-                style={[styles.row, occupied && styles.rowOccupied, isExpanded && styles.rowExpanded]}
-                disabled={!occupied}
-                onPress={() => {
-                  setExpandedHour((current) => (current === hour ? null : hour));
-                }}
-              >
+              <View key={hour} style={[styles.row, occupied && styles.rowOccupied]}>
                 <Text style={styles.hourLabel}>{formatHour(hour)}</Text>
-                <View style={styles.content}>
-                  <Text style={occupied ? styles.continuationText : styles.emptyText}>{occupied ? "Ocupado" : "Libre"}</Text>
-                  {occupied ? <Text style={styles.tapHint}>{isExpanded ? "Ocultar detalles" : "Ver detalles"}</Text> : null}
-                </View>
-              </Pressable>
+                <View style={styles.content}>{occupied ? null : <Text style={styles.emptyText}>Libre</Text>}</View>
+              </View>
             );
           })}
         </View>
 
-        <View pointerEvents="none" style={[styles.meetingsLayer, { height: timelineHeight }]}>
+        <View style={[styles.meetingsLayer, { height: timelineHeight }]}>
           {parsedMeetings.map((meeting) => {
             const clampedStart = Math.max(meeting.startMinutes, timelineStartMinutes);
             const clampedEnd = Math.min(meeting.endMinutes, timelineEndMinutes);
             const clampedDuration = Math.max(0, clampedEnd - clampedStart);
             if (clampedDuration === 0) return null;
 
+            const hasAlreadyFinished = isPastDay || (isCurrentDay && meeting.endMinutes <= nowMinutes);
+            const selected = selectedMeetingId === meeting.id;
+
             return (
               <View
                 key={`chip-${meeting.id}`}
                 style={[
                   styles.meetingChip,
+                  hasAlreadyFinished && styles.meetingChipPast,
+                  selected && styles.meetingChipSelected,
                   {
                     top: toChipTop(clampedStart, timelineStartMinutes),
                     height: toChipHeight(clampedDuration),
                   },
                 ]}
               >
-                <Text style={styles.meetingText}>{formatMeetingHeadline(meeting)}</Text>
+                <Text style={[styles.meetingText, hasAlreadyFinished && styles.meetingTextPast]}>{formatMeetingHeadline(meeting)}</Text>
+                <Pressable
+                  style={styles.detailsButton}
+                  onPress={() => {
+                    setSelectedMeetingId((current) => (current === meeting.id ? null : meeting.id));
+                  }}
+                >
+                  <Text style={styles.detailsButtonText}>
+                    {selectedMeetingId === meeting.id ? "Ocultar detalles" : "Ver detalles"}
+                  </Text>
+                </Pressable>
               </View>
             );
           })}
+
+          {showNowLine ? (
+            <View style={[styles.nowLine, { top: nowLineTop }]}>
+              <Text style={styles.nowLabel}>Ahora</Text>
+            </View>
+          ) : null}
         </View>
       </View>
 
-      {expandedHour !== null ? (
+      {selectedMeeting ? (
         <View style={styles.detailsCard}>
-          <Text style={styles.detailsTitle}>Detalles de {formatHour(expandedHour)}</Text>
-          {expandedMeetings.map((meeting) => (
-            <View key={`details-${meeting.id}-${expandedHour}`} style={styles.detailsRow}>
-              <Text style={styles.detailsMeetingTitle}>{meeting.title}</Text>
-              <Text style={styles.detailsMeetingTime}>
-                {meeting.start}-{meeting.end} · {toDurationLabel(meeting.durationMinutes)}
-              </Text>
-            </View>
-          ))}
+          <Text style={styles.detailsTitle}>{selectedMeeting.title}</Text>
+          <Text style={styles.detailsLine}>
+            {selectedMeeting.start}-{selectedMeeting.end} | {toDurationLabel(selectedMeeting.durationMinutes)}
+          </Text>
+          {selectedMeeting.organizer ? <Text style={styles.detailsLine}>Organizador: {selectedMeeting.organizer}</Text> : null}
+          {selectedMeeting.location ? <Text style={styles.detailsLine}>Ubicacion: {selectedMeeting.location}</Text> : null}
+          {selectedMeeting.meetingUrl ? (
+            <Pressable
+              onPress={() => {
+                Linking.openURL(selectedMeeting.meetingUrl!).catch(() => undefined);
+              }}
+            >
+              <Text style={[styles.detailsLine, styles.detailsLink]}>Enlace: {selectedMeeting.meetingUrl}</Text>
+            </Pressable>
+          ) : null}
+          {selectedMeeting.attendees.length > 0 ? (
+            <Text style={styles.detailsLine}>Asistentes: {selectedMeeting.attendees.join(", ")}</Text>
+          ) : (
+            <Text style={styles.detailsLine}>Asistentes: sin datos</Text>
+          )}
+          {selectedMeeting.description ? <Text style={styles.detailsLine}>Notas: {selectedMeeting.description}</Text> : null}
         </View>
       ) : null}
     </View>
@@ -217,10 +242,7 @@ const styles = StyleSheet.create({
     borderTopColor: "rgba(255,255,255,0.08)",
   },
   rowOccupied: {
-    borderTopColor: "rgba(14,165,233,0.45)",
-  },
-  rowExpanded: {
-    backgroundColor: "rgba(14,165,233,0.08)",
+    borderTopColor: "rgba(14,165,233,0.35)",
   },
   hourLabel: {
     width: 54,
@@ -236,34 +258,65 @@ const styles = StyleSheet.create({
     color: splashColors.textSubtle,
     fontSize: 13,
   },
-  meetingBadge: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 10,
-    backgroundColor: "rgba(14, 165, 233, 0.16)",
-    borderWidth: 1,
-    borderColor: splashColors.glowSoft,
-  },
-  continuationText: {
-    color: splashColors.textSubtle,
-    fontSize: 13,
-    fontStyle: "italic",
-  },
-  tapHint: {
-    color: splashColors.textSubtle,
-    fontSize: 12,
-  },
   meetingChip: {
     position: "absolute",
-    left: 10,
-    right: 10,
-    paddingVertical: 8,
+    left: 8,
+    right: 8,
+    paddingVertical: 6,
     paddingHorizontal: 10,
-    borderRadius: 10,
-    backgroundColor: "rgba(14, 165, 233, 0.16)",
+    borderRadius: 4,
+    backgroundColor: "#C8AAB8",
     borderWidth: 1,
-    borderColor: splashColors.glowSoft,
-    justifyContent: "center",
+    borderColor: "#C95773",
+    justifyContent: "space-between",
+  },
+  meetingChipPast: {
+    backgroundColor: "#8F8590",
+    borderColor: "#736A74",
+  },
+  meetingChipSelected: {
+    borderColor: "#FF3B5E",
+    borderWidth: 2,
+  },
+  meetingText: {
+    color: "#111111",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  meetingTextPast: {
+    color: "rgba(17,17,17,0.65)",
+  },
+  detailsButton: {
+    alignSelf: "flex-start",
+    marginTop: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.82)",
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.1)",
+  },
+  detailsButtonText: {
+    color: "#111111",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  nowLine: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    borderTopWidth: 2,
+    borderTopColor: "#FF2040",
+  },
+  nowLabel: {
+    position: "absolute",
+    top: -10,
+    right: 4,
+    color: "#FF6B7E",
+    fontSize: 10,
+    fontWeight: "700",
+    backgroundColor: "rgba(9,16,31,0.85)",
+    paddingHorizontal: 4,
   },
   detailsCard: {
     marginTop: 10,
@@ -272,30 +325,19 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(14, 165, 233, 0.10)",
     borderWidth: 1,
     borderColor: "rgba(14,165,233,0.35)",
-    gap: 8,
+    gap: 6,
   },
   detailsTitle: {
     color: splashColors.textBright,
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
   },
-  detailsRow: {
-    gap: 2,
-  },
-  detailsMeetingTitle: {
-    color: splashColors.textBright,
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  detailsMeetingTime: {
+  detailsLine: {
     color: splashColors.textMuted,
     fontSize: 12,
   },
-  meetingText: {
-    color: splashColors.textBright,
-    fontSize: 13,
-    fontWeight: "500",
+  detailsLink: {
+    color: splashColors.glowLight,
+    textDecorationLine: "underline",
   },
 });

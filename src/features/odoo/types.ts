@@ -11,4 +11,9 @@ export type OdooMeeting = {
   title: string;
   start: string;
   end: string;
+  organizer?: string;
+  attendees: string[];
+  meetingUrl?: string;
+  location?: string;
+  description?: string;
 };
