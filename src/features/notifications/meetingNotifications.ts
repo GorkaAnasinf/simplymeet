@@ -1,3 +1,4 @@
+import Constants from "expo-constants";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
@@ -16,6 +17,7 @@ type ScheduleMeetingRemindersParams = {
 const CHANNEL_ID = "upcoming-meetings";
 const OFFSETS_MINUTES = [10, 5];
 const DATA_TYPE = "meeting-reminder";
+const IS_EXPO_GO = Constants.executionEnvironment === "storeClient";
 
 function toDateKey(date: Date) {
   const y = date.getFullYear();
@@ -51,6 +53,9 @@ async function ensurePermissionsAndChannel() {
 }
 
 export async function scheduleMeetingReminders({ date, meetings, personName }: ScheduleMeetingRemindersParams) {
+  // Expo Go no soporta push Android en SDK 53+, se omite para evitar errores.
+  if (IS_EXPO_GO) return;
+
   const hasPermission = await ensurePermissionsAndChannel();
   if (!hasPermission) return;
 
@@ -75,7 +80,7 @@ export async function scheduleMeetingReminders({ date, meetings, personName }: S
         await Notifications.scheduleNotificationAsync({
           content: {
             title: `Reunion en ${offset} min`,
-            body: `${meeting.title} (${meeting.start}) · ${personName}`,
+            body: `${meeting.title} (${meeting.start}) - ${personName}`,
             sound: true,
             data: {
               type: DATA_TYPE,
