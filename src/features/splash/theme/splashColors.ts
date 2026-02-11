@@ -1,17 +1,17 @@
 /**
- * Paleta extendida para la splash screen "Dark Cosmos".
- * Se mantiene separada de los colores principales de la app.
+ * Paleta extendida para la splash screen — identidad corporativa Odoo.
+ * Tonos ciruela (plum) oscuros con acento teal para un look profesional.
  */
 export const splashColors = {
-  /** Fondo degradado — tres paradas */
-  gradientStart: "#070B14",
-  gradientMid: "#0F1629",
-  gradientEnd: "#0D1B2A",
+  /** Fondo degradado — tres paradas (ciruela profundo) */
+  gradientStart: "#1A0E17",
+  gradientMid: "#2D1A28",
+  gradientEnd: "#1E1226",
 
-  /** Acento luminoso (cyan/azul eléctrico) */
-  glow: "#0EA5E9",
-  glowLight: "#38BDF8",
-  glowSoft: "rgba(14, 165, 233, 0.25)",
+  /** Acento luminoso (plum Odoo) */
+  glow: "#714B67",
+  glowLight: "#A76D94",
+  glowSoft: "rgba(113, 75, 103, 0.25)",
 
   /** Texto sobre fondo oscuro */
   textBright: "#FFFFFF",
@@ -20,12 +20,27 @@ export const splashColors = {
 
   /** Barra de progreso */
   progressTrack: "rgba(255, 255, 255, 0.08)",
-  progressFill: "#0EA5E9",
-  progressGlow: "rgba(14, 165, 233, 0.50)",
+  progressFill: "#714B67",
+  progressGlow: "rgba(113, 75, 103, 0.50)",
 
   /** Partículas de fondo */
-  particle: "rgba(255, 255, 255, 0.15)",
+  particle: "rgba(167, 109, 148, 0.12)",
 
-  /** Check completado */
-  checkDone: "#34D399",
+  /** Check completado (teal Odoo) */
+  checkDone: "#00A09D",
+
+  /** Color de superficie para cards en modo oscuro */
+  surfaceDark: "rgba(42, 22, 37, 0.75)",
+  surfaceDarkSolid: "rgba(42, 22, 37, 0.97)",
+
+  /** Bordes traslúcidos */
+  borderLight: "rgba(255, 255, 255, 0.10)",
+  borderMedium: "rgba(255, 255, 255, 0.14)",
+
+  /** Meeting chip pasado */
+  meetingPastBg: "#3D2236",
+  meetingPastBorder: "rgba(167, 109, 148, 0.45)",
+
+  /** Row occupied */
+  rowOccupied: "rgba(113, 75, 103, 0.35)",
 };

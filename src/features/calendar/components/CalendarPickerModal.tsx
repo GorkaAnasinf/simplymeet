@@ -124,9 +124,9 @@ const styles = StyleSheet.create({
   container: {
     borderRadius: 16,
     padding: 14,
-    backgroundColor: "rgba(9, 16, 31, 0.98)",
+    backgroundColor: "rgba(42, 22, 37, 0.98)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
+    borderColor: splashColors.borderMedium,
     gap: 10,
   },
   header: {
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   dayCellSelected: {
-    backgroundColor: "rgba(14, 165, 233, 0.26)",
+    backgroundColor: "rgba(113, 75, 103, 0.26)",
     borderWidth: 1,
     borderColor: splashColors.glowSoft,
   },

@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
     height: "100%",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(14,165,233,0.25)",
+    backgroundColor: "rgba(113, 75, 103, 0.25)",
   },
   avatarFallbackText: {
     color: splashColors.textBright,
@@ -87,9 +87,9 @@ const styles = StyleSheet.create({
     width: 220,
     borderRadius: 14,
     padding: 14,
-    backgroundColor: "rgba(8,14,28,0.96)",
+    backgroundColor: "rgba(42, 22, 37, 0.96)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
+    borderColor: splashColors.borderMedium,
     gap: 4,
   },
   menuTitle: {

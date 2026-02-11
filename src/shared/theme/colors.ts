@@ -1,8 +1,10 @@
+/** Colores principales — identidad corporativa Odoo */
 export const colors = {
-  background: "#F4F7FB",
+  background: "#F5F0F3",
   surface: "#FFFFFF",
-  textPrimary: "#101828",
-  textSecondary: "#475467",
-  border: "#E4E7EC",
-  accent: "#0EA5E9",
+  textPrimary: "#2C2C33",
+  textSecondary: "#5C4D57",
+  border: "#E8DFE5",
+  accent: "#714B67",
+  accentTeal: "#00A09D",
 };

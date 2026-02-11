@@ -61,9 +61,9 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 20,
     padding: 16,
-    backgroundColor: "rgba(9, 16, 31, 0.75)",
+    backgroundColor: splashColors.surfaceDark,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.10)",
+    borderColor: splashColors.borderLight,
     gap: 8,
   },
   title: {
@@ -106,9 +106,9 @@ const styles = StyleSheet.create({
     borderRadius: 21,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(14,165,233,0.20)",
+    backgroundColor: "rgba(113, 75, 103, 0.20)",
     borderWidth: 1,
-    borderColor: "rgba(14,165,233,0.40)",
+    borderColor: "rgba(113, 75, 103, 0.40)",
   },
   avatarFallbackText: {
     color: splashColors.textBright,

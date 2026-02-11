@@ -209,9 +209,9 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 20,
     padding: 16,
-    backgroundColor: "rgba(9, 16, 31, 0.75)",
+    backgroundColor: splashColors.surfaceDark,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.10)",
+    borderColor: splashColors.borderLight,
     gap: 8,
   },
   title: {
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
     borderTopColor: "rgba(255,255,255,0.08)",
   },
   rowOccupied: {
-    borderTopColor: "rgba(14,165,233,0.35)",
+    borderTopColor: splashColors.rowOccupied,
   },
   hourLabel: {
     width: 54,
@@ -275,8 +275,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   meetingChipPast: {
-    backgroundColor: "#1F3C4D",
-    borderColor: "rgba(56,189,248,0.45)",
+    backgroundColor: splashColors.meetingPastBg,
+    borderColor: splashColors.meetingPastBorder,
   },
   meetingChipSelected: {
     borderColor: splashColors.textBright,
@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
     color: splashColors.glowLight,
     fontSize: 10,
     fontWeight: "700",
-    backgroundColor: "rgba(9,16,31,0.85)",
+    backgroundColor: "rgba(42, 22, 37, 0.85)",
     paddingHorizontal: 4,
   },
   modalBackdrop: {
@@ -317,9 +317,9 @@ const styles = StyleSheet.create({
     maxHeight: "70%",
     borderRadius: 14,
     padding: 12,
-    backgroundColor: "rgba(9, 16, 31, 0.97)",
+    backgroundColor: splashColors.surfaceDarkSolid,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.14)",
+    borderColor: splashColors.borderMedium,
     gap: 6,
   },
   detailsBody: {
@@ -350,7 +350,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: splashColors.glowSoft,
     borderWidth: 1,
-    borderColor: "rgba(56,189,248,0.55)",
+    borderColor: "rgba(167, 109, 148, 0.55)",
   },
   closeButtonText: {
     color: splashColors.textBright,
