@@ -1,5 +1,12 @@
 # Release Notes
 
+## 2026-02-11 - cierre de rama `feature/odoo-splash-theme-notifs`
+Base: `main`
+- fix(notificaciones): desactiva push en Expo Go y evita error en android
+- feat(app): añade tema dinamico, logo svg y recordatorios push
+
+# Release Notes
+
 ## 2026-02-11 - cierre de rama `feature/odoo-integracion-calendario`
 Base: `main`
 - feat(ui): aplica paleta corporativa Odoo en toda la app\n\nReemplaza los colores cyan/azul eléctrico por la identidad visual\nde Odoo: ciruela (#714B67) como acento primario, teal (#00A09D)\npara éxitos, y degradados oscuros en tonos plum.\n\nArchivos actualizados:\n- splashColors.ts: nueva paleta dark con tokens reutilizables\n- colors.ts: tema claro con tonos Odoo\n- LogoGlow, ProgressBar, FloatingParticles: heredan automáticamente\n- DayScheduleCard, EmployeeSelectorCard, UserMenu: rgba actualizados\n- CalendarPickerModal, DayNavigator: coherencia visual completa"
@@ -39,6 +46,7 @@ Base: `main`
 ## 2026-02-09 - cierre de rama `chore/automatiza-cierre-rama`
 Base: `main`
 - Sin commits nuevos respecto a la rama base.
+
 
 
 
