@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { splashColors } from "../../splash/theme/splashColors";
 
@@ -109,7 +109,7 @@ export function DayScheduleCard({ date, meetings, startHour, endHour }: DaySched
   return (
     <View style={styles.card}>
       <Text style={styles.title}>Agenda del dia</Text>
-      <Text style={styles.description}>Pulsa en "Ver detalles" dentro de cada reunion.</Text>
+      <Text style={styles.description}>Pulsa cualquier reunion para ver sus detalles.</Text>
 
       <View style={styles.grid}>
         <View style={styles.rowsLayer}>
@@ -137,8 +137,11 @@ export function DayScheduleCard({ date, meetings, startHour, endHour }: DaySched
             const selected = selectedMeetingId === meeting.id;
 
             return (
-              <View
+              <Pressable
                 key={`chip-${meeting.id}`}
+                onPress={() => {
+                  setSelectedMeetingId(meeting.id);
+                }}
                 style={[
                   styles.meetingChip,
                   hasAlreadyFinished && styles.meetingChipPast,
@@ -150,17 +153,7 @@ export function DayScheduleCard({ date, meetings, startHour, endHour }: DaySched
                 ]}
               >
                 <Text style={[styles.meetingText, hasAlreadyFinished && styles.meetingTextPast]}>{formatMeetingHeadline(meeting)}</Text>
-                <Pressable
-                  style={styles.detailsButton}
-                  onPress={() => {
-                    setSelectedMeetingId((current) => (current === meeting.id ? null : meeting.id));
-                  }}
-                >
-                  <Text style={styles.detailsButtonText}>
-                    {selectedMeetingId === meeting.id ? "Ocultar detalles" : "Ver detalles"}
-                  </Text>
-                </Pressable>
-              </View>
+              </Pressable>
             );
           })}
 
@@ -172,31 +165,42 @@ export function DayScheduleCard({ date, meetings, startHour, endHour }: DaySched
         </View>
       </View>
 
-      {selectedMeeting ? (
-        <View style={styles.detailsCard}>
-          <Text style={styles.detailsTitle}>{selectedMeeting.title}</Text>
-          <Text style={styles.detailsLine}>
-            {selectedMeeting.start}-{selectedMeeting.end} | {toDurationLabel(selectedMeeting.durationMinutes)}
-          </Text>
-          {selectedMeeting.organizer ? <Text style={styles.detailsLine}>Organizador: {selectedMeeting.organizer}</Text> : null}
-          {selectedMeeting.location ? <Text style={styles.detailsLine}>Ubicacion: {selectedMeeting.location}</Text> : null}
-          {selectedMeeting.meetingUrl ? (
-            <Pressable
-              onPress={() => {
-                Linking.openURL(selectedMeeting.meetingUrl!).catch(() => undefined);
-              }}
-            >
-              <Text style={[styles.detailsLine, styles.detailsLink]}>Enlace: {selectedMeeting.meetingUrl}</Text>
-            </Pressable>
-          ) : null}
-          {selectedMeeting.attendees.length > 0 ? (
-            <Text style={styles.detailsLine}>Asistentes: {selectedMeeting.attendees.join(", ")}</Text>
-          ) : (
-            <Text style={styles.detailsLine}>Asistentes: sin datos</Text>
-          )}
-          {selectedMeeting.description ? <Text style={styles.detailsLine}>Notas: {selectedMeeting.description}</Text> : null}
+      <Modal visible={Boolean(selectedMeeting)} transparent animationType="fade" onRequestClose={() => setSelectedMeetingId(null)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            {selectedMeeting ? (
+              <>
+                <Text style={styles.detailsTitle}>{selectedMeeting.title}</Text>
+                <Text style={styles.detailsLine}>
+                  {selectedMeeting.start}-{selectedMeeting.end} | {toDurationLabel(selectedMeeting.durationMinutes)}
+                </Text>
+                <ScrollView style={styles.detailsBody} contentContainerStyle={styles.detailsBodyContent}>
+                  {selectedMeeting.organizer ? <Text style={styles.detailsLine}>Organizador: {selectedMeeting.organizer}</Text> : null}
+                  {selectedMeeting.location ? <Text style={styles.detailsLine}>Ubicacion: {selectedMeeting.location}</Text> : null}
+                  {selectedMeeting.meetingUrl ? (
+                    <Pressable
+                      onPress={() => {
+                        Linking.openURL(selectedMeeting.meetingUrl!).catch(() => undefined);
+                      }}
+                    >
+                      <Text style={[styles.detailsLine, styles.detailsLink]}>Enlace: {selectedMeeting.meetingUrl}</Text>
+                    </Pressable>
+                  ) : null}
+                  {selectedMeeting.attendees.length > 0 ? (
+                    <Text style={styles.detailsLine}>Asistentes: {selectedMeeting.attendees.join(", ")}</Text>
+                  ) : (
+                    <Text style={styles.detailsLine}>Asistentes: sin datos</Text>
+                  )}
+                  {selectedMeeting.description ? <Text style={styles.detailsLine}>Notas: {selectedMeeting.description}</Text> : null}
+                </ScrollView>
+                <Pressable style={styles.closeButton} onPress={() => setSelectedMeetingId(null)}>
+                  <Text style={styles.closeButtonText}>Cerrar</Text>
+                </Pressable>
+              </>
+            ) : null}
+          </View>
         </View>
-      ) : null}
+      </Modal>
     </View>
   );
 }
@@ -265,67 +269,65 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 4,
-    backgroundColor: "#C8AAB8",
+    backgroundColor: splashColors.glow,
     borderWidth: 1,
-    borderColor: "#C95773",
+    borderColor: splashColors.glowLight,
     justifyContent: "space-between",
   },
   meetingChipPast: {
-    backgroundColor: "#8F8590",
-    borderColor: "#736A74",
+    backgroundColor: "#1F3C4D",
+    borderColor: "rgba(56,189,248,0.45)",
   },
   meetingChipSelected: {
-    borderColor: "#FF3B5E",
+    borderColor: splashColors.textBright,
     borderWidth: 2,
   },
   meetingText: {
-    color: "#111111",
+    color: splashColors.textBright,
     fontSize: 13,
     fontWeight: "600",
   },
   meetingTextPast: {
-    color: "rgba(17,17,17,0.65)",
-  },
-  detailsButton: {
-    alignSelf: "flex-start",
-    marginTop: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.82)",
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.1)",
-  },
-  detailsButtonText: {
-    color: "#111111",
-    fontSize: 12,
-    fontWeight: "600",
+    color: "rgba(255,255,255,0.6)",
   },
   nowLine: {
     position: "absolute",
     left: 0,
     right: 0,
     borderTopWidth: 2,
-    borderTopColor: "#FF2040",
+    borderTopColor: splashColors.glowLight,
   },
   nowLabel: {
     position: "absolute",
     top: -10,
     right: 4,
-    color: "#FF6B7E",
+    color: splashColors.glowLight,
     fontSize: 10,
     fontWeight: "700",
     backgroundColor: "rgba(9,16,31,0.85)",
     paddingHorizontal: 4,
   },
-  detailsCard: {
-    marginTop: 10,
-    padding: 10,
-    borderRadius: 10,
-    backgroundColor: "rgba(14, 165, 233, 0.10)",
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    justifyContent: "center",
+    paddingHorizontal: 16,
+  },
+  modalCard: {
+    maxHeight: "70%",
+    borderRadius: 14,
+    padding: 12,
+    backgroundColor: "rgba(9, 16, 31, 0.97)",
     borderWidth: 1,
-    borderColor: "rgba(14,165,233,0.35)",
+    borderColor: "rgba(255,255,255,0.14)",
     gap: 6,
+  },
+  detailsBody: {
+    maxHeight: 280,
+  },
+  detailsBodyContent: {
+    gap: 6,
+    paddingVertical: 4,
   },
   detailsTitle: {
     color: splashColors.textBright,
@@ -339,5 +341,20 @@ const styles = StyleSheet.create({
   detailsLink: {
     color: splashColors.glowLight,
     textDecorationLine: "underline",
+  },
+  closeButton: {
+    marginTop: 8,
+    alignSelf: "flex-end",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: splashColors.glowSoft,
+    borderWidth: 1,
+    borderColor: "rgba(56,189,248,0.55)",
+  },
+  closeButtonText: {
+    color: splashColors.textBright,
+    fontSize: 12,
+    fontWeight: "600",
   },
 });
