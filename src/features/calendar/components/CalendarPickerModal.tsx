@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { splashColors } from "../../splash/theme/splashColors";
+import { useAppTheme } from "../../../shared/theme/appTheme";
 
 type CalendarPickerModalProps = {
   visible: boolean;
@@ -43,6 +43,7 @@ function getCalendarDays(date: Date) {
 }
 
 export function CalendarPickerModal({ visible, selectedDate, onClose, onSelectDate }: CalendarPickerModalProps) {
+  const { palette } = useAppTheme();
   const [displayMonth, setDisplayMonth] = useState(monthStart(selectedDate));
   const days = useMemo(() => getCalendarDays(displayMonth), [displayMonth]);
   
@@ -54,20 +55,20 @@ export function CalendarPickerModal({ visible, selectedDate, onClose, onSelectDa
   return (
     <Modal visible={visible} animationType="fade" transparent onRequestClose={onClose}>
       <View style={styles.backdrop}>
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: palette.surfaceDarkSolid, borderColor: palette.borderMedium }]}>
           <View style={styles.header}>
-            <Pressable onPress={() => setDisplayMonth((current) => addMonths(current, -1))} style={styles.navButton}>
-              <Text style={styles.navLabel}>{"<"}</Text>
+            <Pressable onPress={() => setDisplayMonth((current) => addMonths(current, -1))} style={[styles.navButton, { borderColor: palette.borderMedium }]}>
+              <Text style={[styles.navLabel, { color: palette.textBright }]}>{"<"}</Text>
             </Pressable>
-            <Text style={styles.monthLabel}>{toMonthLabel(displayMonth)}</Text>
-            <Pressable onPress={() => setDisplayMonth((current) => addMonths(current, 1))} style={styles.navButton}>
-              <Text style={styles.navLabel}>{">"}</Text>
+            <Text style={[styles.monthLabel, { color: palette.textBright }]}>{toMonthLabel(displayMonth)}</Text>
+            <Pressable onPress={() => setDisplayMonth((current) => addMonths(current, 1))} style={[styles.navButton, { borderColor: palette.borderMedium }]}>
+              <Text style={[styles.navLabel, { color: palette.textBright }]}>{">"}</Text>
             </Pressable>
           </View>
 
           <View style={styles.weekHeader}>
             {WEEK_DAYS.map((label) => (
-              <Text key={label} style={styles.weekLabel}>
+              <Text key={label} style={[styles.weekLabel, { color: palette.textMuted }]}>
                 {label}
               </Text>
             ))}
@@ -85,7 +86,14 @@ export function CalendarPickerModal({ visible, selectedDate, onClose, onSelectDa
                     onSelectDate(new Date(day));
                   }}
                 >
-                  <Text style={[styles.dayText, outsideMonth && styles.dayTextOutside, selected && styles.dayTextSelected]}>
+                  <Text
+                    style={[
+                      styles.dayText,
+                      { color: palette.textBright },
+                      outsideMonth && [styles.dayTextOutside, { color: palette.textSubtle }],
+                      selected && [styles.dayTextSelected, { color: palette.textBright }],
+                    ]}
+                  >
                     {day.getDate()}
                   </Text>
                 </Pressable>
@@ -102,10 +110,10 @@ export function CalendarPickerModal({ visible, selectedDate, onClose, onSelectDa
                 onSelectDate(today);
               }}
             >
-              <Text style={styles.actionText}>Hoy</Text>
+              <Text style={[styles.actionText, { color: palette.textBright }]}>Hoy</Text>
             </Pressable>
             <Pressable style={styles.actionButton} onPress={onClose}>
-              <Text style={styles.actionText}>Cerrar</Text>
+              <Text style={[styles.actionText, { color: palette.textBright }]}>Cerrar</Text>
             </Pressable>
           </View>
         </View>
@@ -124,9 +132,7 @@ const styles = StyleSheet.create({
   container: {
     borderRadius: 16,
     padding: 14,
-    backgroundColor: "rgba(42, 22, 37, 0.98)",
     borderWidth: 1,
-    borderColor: splashColors.borderMedium,
     gap: 10,
   },
   header: {
@@ -145,12 +151,10 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.16)",
   },
   navLabel: {
-    color: splashColors.textBright,
     fontSize: 18,
     fontWeight: "700",
   },
   monthLabel: {
-    color: splashColors.textBright,
     fontSize: 17,
     fontWeight: "700",
     textTransform: "capitalize",
@@ -161,7 +165,6 @@ const styles = StyleSheet.create({
   weekLabel: {
     flex: 1,
     textAlign: "center",
-    color: splashColors.textMuted,
     fontSize: 12,
     fontWeight: "600",
   },
@@ -180,20 +183,16 @@ const styles = StyleSheet.create({
   dayCellSelected: {
     backgroundColor: "rgba(113, 75, 103, 0.26)",
     borderWidth: 1,
-    borderColor: splashColors.glowSoft,
+    borderColor: "rgba(113, 75, 103, 0.25)",
   },
   dayText: {
-    color: splashColors.textBright,
     fontSize: 14,
     fontWeight: "600",
   },
   dayTextOutside: {
-    color: splashColors.textSubtle,
     opacity: 0.45,
   },
-  dayTextSelected: {
-    color: splashColors.textBright,
-  },
+  dayTextSelected: {},
   actions: {
     flexDirection: "row",
     justifyContent: "flex-end",
@@ -209,7 +208,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.06)",
   },
   actionText: {
-    color: splashColors.textBright,
     fontSize: 13,
     fontWeight: "600",
   },

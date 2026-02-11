@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
-import { splashColors } from "../../splash/theme/splashColors";
+import { useAppTheme } from "../../../shared/theme/appTheme";
 
 type Meeting = {
   id: string;
@@ -74,6 +74,7 @@ function toNowMinutes() {
 }
 
 export function DayScheduleCard({ date, meetings, startHour, endHour }: DayScheduleCardProps) {
+  const { palette } = useAppTheme();
   const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(null);
   const timelineStartMinutes = startHour * 60;
   const timelineEndMinutes = (endHour + 1) * 60;
@@ -107,9 +108,9 @@ export function DayScheduleCard({ date, meetings, startHour, endHour }: DaySched
   const nowLineTop = showNowLine ? toChipTop(nowMinutes, timelineStartMinutes) : 0;
 
   return (
-    <View style={styles.card}>
-      <Text style={styles.title}>Agenda del dia</Text>
-      <Text style={styles.description}>Pulsa cualquier reunion para ver sus detalles.</Text>
+    <View style={[styles.card, { backgroundColor: palette.surfaceDark, borderColor: palette.borderLight }]}>
+      <Text style={[styles.title, { color: palette.textBright }]}>Agenda del dia</Text>
+      <Text style={[styles.description, { color: palette.textMuted }]}>Pulsa cualquier reunion para ver sus detalles.</Text>
 
       <View style={styles.grid}>
         <View style={styles.rowsLayer}>
@@ -119,8 +120,8 @@ export function DayScheduleCard({ date, meetings, startHour, endHour }: DaySched
             const occupied = parsedMeetings.some((meeting) => meeting.startMinutes < to && meeting.endMinutes > from);
             return (
               <View key={hour} style={[styles.row, occupied && styles.rowOccupied]}>
-                <Text style={styles.hourLabel}>{formatHour(hour)}</Text>
-                <View style={styles.content}>{occupied ? null : <Text style={styles.emptyText}>Libre</Text>}</View>
+                <Text style={[styles.hourLabel, { color: palette.textSubtle }]}>{formatHour(hour)}</Text>
+                <View style={styles.content}>{occupied ? null : <Text style={[styles.emptyText, { color: palette.textSubtle }]}>Libre</Text>}</View>
               </View>
             );
           })}
@@ -147,19 +148,25 @@ export function DayScheduleCard({ date, meetings, startHour, endHour }: DaySched
                   hasAlreadyFinished && styles.meetingChipPast,
                   selected && styles.meetingChipSelected,
                   {
+                    backgroundColor: hasAlreadyFinished ? palette.meetingPastBg : palette.glow,
+                    borderColor: selected ? palette.textBright : hasAlreadyFinished ? palette.meetingPastBorder : palette.glowLight,
+                  },
+                  {
                     top: toChipTop(clampedStart, timelineStartMinutes),
                     height: toChipHeight(clampedDuration),
                   },
                 ]}
               >
-                <Text style={[styles.meetingText, hasAlreadyFinished && styles.meetingTextPast]}>{formatMeetingHeadline(meeting)}</Text>
+                <Text style={[styles.meetingText, { color: hasAlreadyFinished ? "rgba(255,255,255,0.6)" : palette.textBright }]}>
+                  {formatMeetingHeadline(meeting)}
+                </Text>
               </Pressable>
             );
           })}
 
           {showNowLine ? (
-            <View style={[styles.nowLine, { top: nowLineTop }]}>
-              <Text style={styles.nowLabel}>Ahora</Text>
+            <View style={[styles.nowLine, { top: nowLineTop, borderTopColor: palette.glowLight }]}>
+              <Text style={[styles.nowLabel, { color: palette.glowLight }]}>Ahora</Text>
             </View>
           ) : null}
         </View>
@@ -167,34 +174,36 @@ export function DayScheduleCard({ date, meetings, startHour, endHour }: DaySched
 
       <Modal visible={Boolean(selectedMeeting)} transparent animationType="fade" onRequestClose={() => setSelectedMeetingId(null)}>
         <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
+          <View style={[styles.modalCard, { backgroundColor: palette.surfaceDarkSolid, borderColor: palette.borderMedium }]}>
             {selectedMeeting ? (
               <>
-                <Text style={styles.detailsTitle}>{selectedMeeting.title}</Text>
-                <Text style={styles.detailsLine}>
+                <Text style={[styles.detailsTitle, { color: palette.textBright }]}>{selectedMeeting.title}</Text>
+                <Text style={[styles.detailsLine, { color: palette.textMuted }]}>
                   {selectedMeeting.start}-{selectedMeeting.end} | {toDurationLabel(selectedMeeting.durationMinutes)}
                 </Text>
                 <ScrollView style={styles.detailsBody} contentContainerStyle={styles.detailsBodyContent}>
-                  {selectedMeeting.organizer ? <Text style={styles.detailsLine}>Organizador: {selectedMeeting.organizer}</Text> : null}
-                  {selectedMeeting.location ? <Text style={styles.detailsLine}>Ubicacion: {selectedMeeting.location}</Text> : null}
+                  {selectedMeeting.organizer ? <Text style={[styles.detailsLine, { color: palette.textMuted }]}>Organizador: {selectedMeeting.organizer}</Text> : null}
+                  {selectedMeeting.location ? <Text style={[styles.detailsLine, { color: palette.textMuted }]}>Ubicacion: {selectedMeeting.location}</Text> : null}
                   {selectedMeeting.meetingUrl ? (
                     <Pressable
                       onPress={() => {
                         Linking.openURL(selectedMeeting.meetingUrl!).catch(() => undefined);
                       }}
                     >
-                      <Text style={[styles.detailsLine, styles.detailsLink]}>Enlace: {selectedMeeting.meetingUrl}</Text>
+                      <Text style={[styles.detailsLine, styles.detailsLink, { color: palette.glowLight }]}>
+                        Enlace: {selectedMeeting.meetingUrl}
+                      </Text>
                     </Pressable>
                   ) : null}
                   {selectedMeeting.attendees.length > 0 ? (
-                    <Text style={styles.detailsLine}>Asistentes: {selectedMeeting.attendees.join(", ")}</Text>
+                    <Text style={[styles.detailsLine, { color: palette.textMuted }]}>Asistentes: {selectedMeeting.attendees.join(", ")}</Text>
                   ) : (
-                    <Text style={styles.detailsLine}>Asistentes: sin datos</Text>
+                    <Text style={[styles.detailsLine, { color: palette.textMuted }]}>Asistentes: sin datos</Text>
                   )}
-                  {selectedMeeting.description ? <Text style={styles.detailsLine}>Notas: {selectedMeeting.description}</Text> : null}
+                  {selectedMeeting.description ? <Text style={[styles.detailsLine, { color: palette.textMuted }]}>Notas: {selectedMeeting.description}</Text> : null}
                 </ScrollView>
-                <Pressable style={styles.closeButton} onPress={() => setSelectedMeetingId(null)}>
-                  <Text style={styles.closeButtonText}>Cerrar</Text>
+                <Pressable style={[styles.closeButton, { backgroundColor: palette.glowSoft, borderColor: palette.borderMedium }]} onPress={() => setSelectedMeetingId(null)}>
+                  <Text style={[styles.closeButtonText, { color: palette.textBright }]}>Cerrar</Text>
                 </Pressable>
               </>
             ) : null}
@@ -209,18 +218,14 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 20,
     padding: 16,
-    backgroundColor: splashColors.surfaceDark,
     borderWidth: 1,
-    borderColor: splashColors.borderLight,
     gap: 8,
   },
   title: {
-    color: splashColors.textBright,
     fontSize: 20,
     fontWeight: "700",
   },
   description: {
-    color: splashColors.textMuted,
     fontSize: 13,
   },
   grid: {
@@ -246,11 +251,10 @@ const styles = StyleSheet.create({
     borderTopColor: "rgba(255,255,255,0.08)",
   },
   rowOccupied: {
-    borderTopColor: splashColors.rowOccupied,
+    borderTopColor: "rgba(113, 75, 103, 0.35)",
   },
   hourLabel: {
     width: 54,
-    color: splashColors.textSubtle,
     fontSize: 13,
     fontWeight: "600",
   },
@@ -259,7 +263,6 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   emptyText: {
-    color: splashColors.textSubtle,
     fontSize: 13,
   },
   meetingChip: {
@@ -269,39 +272,30 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 4,
-    backgroundColor: splashColors.glow,
     borderWidth: 1,
-    borderColor: splashColors.glowLight,
     justifyContent: "space-between",
   },
   meetingChipPast: {
-    backgroundColor: splashColors.meetingPastBg,
-    borderColor: splashColors.meetingPastBorder,
+    backgroundColor: "#3D2236",
+    borderColor: "rgba(167, 109, 148, 0.45)",
   },
   meetingChipSelected: {
-    borderColor: splashColors.textBright,
     borderWidth: 2,
   },
   meetingText: {
-    color: splashColors.textBright,
     fontSize: 13,
     fontWeight: "600",
-  },
-  meetingTextPast: {
-    color: "rgba(255,255,255,0.6)",
   },
   nowLine: {
     position: "absolute",
     left: 0,
     right: 0,
     borderTopWidth: 2,
-    borderTopColor: splashColors.glowLight,
   },
   nowLabel: {
     position: "absolute",
     top: -10,
     right: 4,
-    color: splashColors.glowLight,
     fontSize: 10,
     fontWeight: "700",
     backgroundColor: "rgba(42, 22, 37, 0.85)",
@@ -317,9 +311,7 @@ const styles = StyleSheet.create({
     maxHeight: "70%",
     borderRadius: 14,
     padding: 12,
-    backgroundColor: splashColors.surfaceDarkSolid,
     borderWidth: 1,
-    borderColor: splashColors.borderMedium,
     gap: 6,
   },
   detailsBody: {
@@ -330,16 +322,13 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   detailsTitle: {
-    color: splashColors.textBright,
     fontSize: 14,
     fontWeight: "700",
   },
   detailsLine: {
-    color: splashColors.textMuted,
     fontSize: 12,
   },
   detailsLink: {
-    color: splashColors.glowLight,
     textDecorationLine: "underline",
   },
   closeButton: {
@@ -348,12 +337,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 999,
-    backgroundColor: splashColors.glowSoft,
     borderWidth: 1,
-    borderColor: "rgba(167, 109, 148, 0.55)",
+    borderColor: "rgba(255,255,255,0.16)",
   },
   closeButtonText: {
-    color: splashColors.textBright,
     fontSize: 12,
     fontWeight: "600",
   },

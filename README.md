@@ -30,8 +30,11 @@ src/
       odooClient.ts
       odooConfig.ts
       types.ts
+    notifications/
+      meetingNotifications.ts
   shared/
     theme/
+      appTheme.tsx
       colors.ts
       spacing.ts
     ui/
@@ -57,6 +60,13 @@ src/
    - `EXPO_PUBLIC_ODOO_USERNAME`
    - `EXPO_PUBLIC_ODOO_PASSWORD`
 3. Reinicia Metro con cache limpia: `npx expo start -c`.
+
+## Tema y notificaciones
+
+- La app incluye toggle manual claro/oscuro en la cabecera del calendario.
+- Si no hay preferencia guardada, usa `useColorScheme` del dispositivo.
+- Los recordatorios de proximas reuniones usan `expo-notifications` (10 y 5 minutos antes).
+- En Android se solicita permiso `POST_NOTIFICATIONS`.
 
 ## Cierre de rama automatizado
 

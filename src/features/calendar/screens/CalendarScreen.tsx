@@ -1,17 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 
 import { useOdoo } from "../../odoo/OdooContext";
 import { OdooMeeting } from "../../odoo/types";
 import { FloatingParticles } from "../../splash/components/FloatingParticles";
-import { splashColors } from "../../splash/theme/splashColors";
+import { useAppTheme } from "../../../shared/theme/appTheme";
 import { CalendarPickerModal } from "../components/CalendarPickerModal";
 import { DayNavigator } from "../components/DayNavigator";
 import { DayScheduleCard } from "../components/DayScheduleCard";
 import { EmployeeSelectorCard } from "../components/EmployeeSelectorCard";
 import { UserMenu } from "../components/UserMenu";
+import { scheduleMeetingReminders } from "../../notifications/meetingNotifications";
 
 type ScheduleMeeting = {
   id: string;
@@ -67,6 +68,7 @@ function toDateKey(date: Date) {
 }
 
 export function CalendarScreen() {
+  const { palette, mode, toggleMode } = useAppTheme();
   const {
     configured,
     selectedEmployee,
@@ -150,10 +152,25 @@ export function CalendarScreen() {
     };
   }, [getMeetingsForDay, meetingsCache, selectedDate, selectedDateKey, selectedEmployee]);
 
+  useEffect(() => {
+    const today = new Date();
+    const isToday =
+      selectedDate.getFullYear() === today.getFullYear() &&
+      selectedDate.getMonth() === today.getMonth() &&
+      selectedDate.getDate() === today.getDate();
+
+    if (!isToday || !selectedEmployee || meetings.length === 0) return;
+    scheduleMeetingReminders({
+      date: selectedDate,
+      meetings,
+      personName: selectedEmployee.name,
+    }).catch(() => undefined);
+  }, [meetings, selectedDate, selectedEmployee]);
+
   return (
     <View style={styles.root}>
       <LinearGradient
-        colors={[splashColors.gradientStart, splashColors.gradientMid, splashColors.gradientEnd]}
+        colors={[palette.gradientStart, palette.gradientMid, palette.gradientEnd]}
         locations={[0, 0.45, 1]}
         style={StyleSheet.absoluteFill}
       />
@@ -162,7 +179,10 @@ export function CalendarScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content}>
           <View style={styles.header}>
-            <Text style={styles.brand}>SimplyMeet</Text>
+            <Text style={[styles.brand, { color: palette.textBright }]}>{mode === "dark" ? "SimplyMeet" : "SimplyMeet Light"}</Text>
+            <Pressable style={[styles.themeToggle, { borderColor: palette.borderMedium }]} onPress={toggleMode}>
+              <Text style={[styles.themeToggleText, { color: palette.textBright }]}>{mode === "dark" ? "Modo claro" : "Modo oscuro"}</Text>
+            </Pressable>
             {selectedEmployee ? (
               <UserMenu
                 employee={selectedEmployee}
@@ -180,7 +200,7 @@ export function CalendarScreen() {
             ) : null}
           </View>
 
-          {!configured ? <Text style={styles.error}>Configura credenciales Odoo en variables EXPO_PUBLIC_ODOO_*.</Text> : null}
+          {!configured ? <Text style={[styles.error, { color: palette.errorText }]}>Configura credenciales Odoo en variables EXPO_PUBLIC_ODOO_*.</Text> : null}
 
           {!selectedEmployee ? (
             <EmployeeSelectorCard
@@ -209,11 +229,11 @@ export function CalendarScreen() {
 
               {meetingsLoading || isChangingDay ? (
                 <View style={styles.loadingRow}>
-                  <ActivityIndicator size="small" color={splashColors.glowLight} />
-                  <Text style={styles.info}>Cargando reuniones...</Text>
+                  <ActivityIndicator size="small" color={palette.glowLight} />
+                  <Text style={[styles.info, { color: palette.textSubtle }]}>Cargando reuniones...</Text>
                 </View>
               ) : null}
-              {meetingsError ? <Text style={styles.error}>{meetingsError}</Text> : null}
+              {meetingsError ? <Text style={[styles.error, { color: palette.errorText }]}>{meetingsError}</Text> : null}
 
               <DayScheduleCard date={selectedDate} meetings={meetings} startHour={8} endHour={20} />
             </>
@@ -254,7 +274,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   brand: {
-    color: splashColors.textBright,
     fontSize: 28,
     fontWeight: "700",
     letterSpacing: 1,
@@ -263,8 +282,22 @@ const styles = StyleSheet.create({
     textShadowRadius: 6,
   },
   info: {
-    color: splashColors.textSubtle,
     fontSize: 13,
+  },
+  themeToggle: {
+    marginLeft: "auto",
+    marginRight: 10,
+    height: 32,
+    borderRadius: 999,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 10,
+    backgroundColor: "rgba(255,255,255,0.06)",
+  },
+  themeToggleText: {
+    fontSize: 12,
+    fontWeight: "600",
   },
   loadingRow: {
     flexDirection: "row",

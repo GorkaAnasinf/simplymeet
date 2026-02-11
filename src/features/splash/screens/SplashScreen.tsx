@@ -3,7 +3,7 @@ import { Animated, StyleSheet, View, Text, Dimensions } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
 
-import { splashColors } from "../theme/splashColors";
+import { useAppTheme } from "../../../shared/theme/appTheme";
 import { FloatingParticles } from "../components/FloatingParticles";
 import { LogoGlow } from "../components/LogoGlow";
 import { ProgressBar } from "../components/ProgressBar";
@@ -18,6 +18,7 @@ interface SplashScreenProps {
 }
 
 export function SplashScreen({ onFinished, checkDatabaseConnection }: SplashScreenProps) {
+  const { palette, mode } = useAppTheme();
   const { progress, steps, currentIndex, finished, hasErrors } = useStartupChecks({
     checkDatabaseConnection,
   });
@@ -69,10 +70,10 @@ export function SplashScreen({ onFinished, checkDatabaseConnection }: SplashScre
 
   return (
     <Animated.View style={[styles.root, { opacity: screenOpacity }]}>
-      <StatusBar style="light" />
+      <StatusBar style={mode === "dark" ? "light" : "dark"} />
 
       <LinearGradient
-        colors={[splashColors.gradientStart, splashColors.gradientMid, splashColors.gradientEnd]}
+        colors={[palette.gradientStart, palette.gradientMid, palette.gradientEnd]}
         locations={[0, 0.45, 1]}
         style={StyleSheet.absoluteFill}
       />
@@ -83,20 +84,24 @@ export function SplashScreen({ onFinished, checkDatabaseConnection }: SplashScre
         <View style={styles.brandArea}>
           <LogoGlow />
 
-          <Animated.Text style={[styles.title, { opacity: titleOpacity, transform: [{ translateY: titleTranslateY }] }]}>
+          <Animated.Text
+            style={[styles.title, { opacity: titleOpacity, transform: [{ translateY: titleTranslateY }], color: palette.textBright }]}
+          >
             SimplyMeet
           </Animated.Text>
 
-          <Animated.Text style={[styles.subtitle, { opacity: subtitleOpacity }]}>Tu agenda inteligente</Animated.Text>
+          <Animated.Text style={[styles.subtitle, { opacity: subtitleOpacity, color: palette.textMuted }]}>
+            Tu agenda inteligente
+          </Animated.Text>
         </View>
 
         <View style={styles.progressArea}>
           <ProgressBar progress={progress} />
           <StepList steps={steps} currentIndex={currentIndex} />
-          {hasErrors ? <Text style={styles.warning}>No se pudo validar Odoo. Revisa la configuracion.</Text> : null}
+          {hasErrors ? <Text style={[styles.warning, { color: palette.errorText }]}>No se pudo validar Odoo. Revisa la configuracion.</Text> : null}
         </View>
 
-        <Animated.Text style={[styles.version, { opacity: versionOpacity }]}>v1.0.0</Animated.Text>
+        <Animated.Text style={[styles.version, { opacity: versionOpacity, color: palette.textSubtle }]}>v1.0.0</Animated.Text>
       </View>
     </Animated.View>
   );
@@ -120,7 +125,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: "700",
-    color: splashColors.textBright,
     letterSpacing: 1.5,
     marginTop: 8,
     textShadowColor: "rgba(0,0,0,0.4)",
@@ -130,7 +134,6 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 14,
     fontWeight: "400",
-    color: splashColors.textMuted,
     letterSpacing: 2,
     textTransform: "uppercase",
   },
@@ -144,7 +147,6 @@ const styles = StyleSheet.create({
   },
   version: {
     fontSize: 11,
-    color: splashColors.textSubtle,
     fontWeight: "300",
   },
 });

@@ -1,7 +1,7 @@
 import { Image, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { OdooEmployee } from "../../odoo/types";
-import { splashColors } from "../../splash/theme/splashColors";
+import { useAppTheme } from "../../../shared/theme/appTheme";
 
 type UserMenuProps = {
   employee: OdooEmployee;
@@ -21,6 +21,7 @@ function initials(name: string) {
 }
 
 export function UserMenu({ employee, open, onOpen, onClose, onChangeUser }: UserMenuProps) {
+  const { palette } = useAppTheme();
   return (
     <>
       <Pressable onPress={onOpen} style={styles.trigger}>
@@ -28,19 +29,19 @@ export function UserMenu({ employee, open, onOpen, onClose, onChangeUser }: User
           <Image source={{ uri: `data:image/png;base64,${employee.image128}` }} style={styles.avatar} />
         ) : (
           <View style={styles.avatarFallback}>
-            <Text style={styles.avatarFallbackText}>{initials(employee.name)}</Text>
+            <Text style={[styles.avatarFallbackText, { color: palette.textBright }]}>{initials(employee.name)}</Text>
           </View>
         )}
       </Pressable>
 
       <Modal transparent visible={open} animationType="fade" onRequestClose={onClose}>
         <Pressable style={styles.overlay} onPress={onClose}>
-          <Pressable style={styles.menu} onPress={() => undefined}>
-            <Text style={styles.menuTitle}>{employee.name}</Text>
-            <Text style={styles.menuEmail}>{employee.workEmail || "Sin email de trabajo"}</Text>
+          <Pressable style={[styles.menu, { backgroundColor: palette.surfaceDarkSolid, borderColor: palette.borderMedium }]} onPress={() => undefined}>
+            <Text style={[styles.menuTitle, { color: palette.textBright }]}>{employee.name}</Text>
+            <Text style={[styles.menuEmail, { color: palette.textSubtle }]}>{employee.workEmail || "Sin email de trabajo"}</Text>
 
-            <Pressable onPress={onChangeUser} style={styles.changeButton}>
-              <Text style={styles.changeButtonText}>Cambiar usuario</Text>
+            <Pressable onPress={onChangeUser} style={[styles.changeButton, { borderColor: palette.borderMedium }]}>
+              <Text style={[styles.changeButtonText, { color: palette.textBright }]}>Cambiar usuario</Text>
             </Pressable>
           </Pressable>
         </Pressable>
@@ -71,7 +72,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(113, 75, 103, 0.25)",
   },
   avatarFallbackText: {
-    color: splashColors.textBright,
     fontWeight: "700",
     fontSize: 12,
   },
@@ -89,16 +89,14 @@ const styles = StyleSheet.create({
     padding: 14,
     backgroundColor: "rgba(42, 22, 37, 0.96)",
     borderWidth: 1,
-    borderColor: splashColors.borderMedium,
+    borderColor: "rgba(255,255,255,0.16)",
     gap: 4,
   },
   menuTitle: {
-    color: splashColors.textBright,
     fontWeight: "700",
     fontSize: 14,
   },
   menuEmail: {
-    color: splashColors.textSubtle,
     fontSize: 12,
     marginBottom: 8,
   },
@@ -112,7 +110,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.05)",
   },
   changeButtonText: {
-    color: splashColors.textBright,
     fontWeight: "600",
     fontSize: 13,
   },

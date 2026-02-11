@@ -2,7 +2,7 @@ import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import { CalendarScreen } from "../features/calendar/screens/CalendarScreen";
-import { splashColors } from "../features/splash/theme/splashColors";
+import { useAppTheme } from "../shared/theme/appTheme";
 
 export type RootStackParamList = {
   Calendar: undefined;
@@ -10,15 +10,20 @@ export type RootStackParamList = {
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-const navTheme = {
-  ...DefaultTheme,
-  colors: {
-    ...DefaultTheme.colors,
-    background: splashColors.gradientStart,
-  },
-};
-
 export function AppNavigator() {
+  const { palette } = useAppTheme();
+  const navTheme = {
+    ...DefaultTheme,
+    colors: {
+      ...DefaultTheme.colors,
+      background: palette.screenBackground,
+      text: palette.textBright,
+      card: palette.surfaceDarkSolid,
+      border: palette.borderMedium,
+      primary: palette.glow,
+    },
+  };
+
   return (
     <NavigationContainer theme={navTheme}>
       <Stack.Navigator initialRouteName="Calendar" screenOptions={{ headerShown: false }}>

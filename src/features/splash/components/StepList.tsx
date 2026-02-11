@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Animated, StyleSheet, View, Text } from "react-native";
 
-import { splashColors } from "../theme/splashColors";
+import { useAppTheme } from "../../../shared/theme/appTheme";
 import type { StartupStep } from "../hooks/useStartupChecks";
 
 interface StepListProps {
@@ -10,6 +10,7 @@ interface StepListProps {
 }
 
 export function StepList({ steps, currentIndex }: StepListProps) {
+  const { palette } = useAppTheme();
   return (
     <View style={styles.container}>
       {steps.map((step, i) => (
@@ -20,6 +21,7 @@ export function StepList({ steps, currentIndex }: StepListProps) {
           failed={step.failed}
           active={i === currentIndex}
           visible={i <= currentIndex}
+          palette={palette}
         />
       ))}
     </View>
@@ -32,9 +34,10 @@ interface StepRowProps {
   failed?: boolean;
   active: boolean;
   visible: boolean;
+  palette: ReturnType<typeof useAppTheme>["palette"];
 }
 
-function StepRow({ label, done, failed, active, visible }: StepRowProps) {
+function StepRow({ label, done, failed, active, visible, palette }: StepRowProps) {
   const opacity = useRef(new Animated.Value(0)).current;
   const translateX = useRef(new Animated.Value(-12)).current;
 
@@ -60,20 +63,28 @@ function StepRow({ label, done, failed, active, visible }: StepRowProps) {
         {failed ? (
           <Text style={styles.errorMark}>!</Text>
         ) : done ? (
-          <Text style={styles.checkMark}>OK</Text>
+          <Text style={[styles.checkMark, { color: palette.checkDone }]}>OK</Text>
         ) : active ? (
-          <PulsingDot />
+          <PulsingDot color={palette.glow} />
         ) : null}
       </View>
 
-      <Text style={[styles.label, done && styles.labelDone, failed && styles.labelFailed, active && !done && styles.labelActive]}>
+      <Text
+        style={[
+          styles.label,
+          { color: palette.textSubtle },
+          done && { color: palette.textMuted },
+          failed && styles.labelFailed,
+          active && !done && { color: palette.textMuted, fontWeight: "500" },
+        ]}
+      >
         {label}
       </Text>
     </Animated.View>
   );
 }
 
-function PulsingDot() {
+function PulsingDot({ color }: { color: string }) {
   const scale = useRef(new Animated.Value(0.6)).current;
   const dotOpacity = useRef(new Animated.Value(0.5)).current;
 
@@ -110,7 +121,7 @@ function PulsingDot() {
     return () => pulse.stop();
   }, [scale, dotOpacity]);
 
-  return <Animated.View style={[styles.dot, { opacity: dotOpacity, transform: [{ scale }] }]} />;
+  return <Animated.View style={[styles.dot, { opacity: dotOpacity, transform: [{ scale }], backgroundColor: color }]} />;
 }
 
 const styles = StyleSheet.create({
@@ -133,7 +144,6 @@ const styles = StyleSheet.create({
   checkMark: {
     fontSize: 10,
     fontWeight: "700",
-    color: splashColors.checkDone,
   },
   errorMark: {
     fontSize: 13,
@@ -144,19 +154,9 @@ const styles = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 3.5,
-    backgroundColor: splashColors.glow,
   },
   label: {
     fontSize: 13,
-    color: splashColors.textSubtle,
-    fontWeight: "400",
-  },
-  labelActive: {
-    color: splashColors.textMuted,
-    fontWeight: "500",
-  },
-  labelDone: {
-    color: splashColors.textMuted,
     fontWeight: "400",
   },
   labelFailed: {

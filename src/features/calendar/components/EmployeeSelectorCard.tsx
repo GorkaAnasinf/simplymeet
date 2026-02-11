@@ -1,7 +1,7 @@
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
-import { splashColors } from "../../splash/theme/splashColors";
 import { OdooEmployee } from "../../odoo/types";
+import { useAppTheme } from "../../../shared/theme/appTheme";
 
 type EmployeeSelectorCardProps = {
   employees: OdooEmployee[];
@@ -21,15 +21,16 @@ function initials(name: string) {
 }
 
 export function EmployeeSelectorCard({ employees, loading, error, onRetry, onSelect }: EmployeeSelectorCardProps) {
+  const { palette } = useAppTheme();
   return (
-    <View style={styles.card}>
-      <Text style={styles.title}>Selecciona tu usuario</Text>
-      <Text style={styles.subtitle}>Elige una persona de Odoo para cargar su agenda diaria.</Text>
+    <View style={[styles.card, { backgroundColor: palette.surfaceDark, borderColor: palette.borderLight }]}>
+      <Text style={[styles.title, { color: palette.textBright }]}>Selecciona tu usuario</Text>
+      <Text style={[styles.subtitle, { color: palette.textMuted }]}>Elige una persona de Odoo para cargar su agenda diaria.</Text>
 
-      {loading ? <Text style={styles.info}>Cargando empleados...</Text> : null}
+      {loading ? <Text style={[styles.info, { color: palette.textSubtle }]}>Cargando empleados...</Text> : null}
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {!loading && !error && employees.length === 0 ? (
-        <Text style={styles.info}>No hay empleados disponibles con usuario asociado.</Text>
+        <Text style={[styles.info, { color: palette.textSubtle }]}>No hay empleados disponibles con usuario asociado.</Text>
       ) : null}
 
       <ScrollView style={styles.list}>
@@ -39,19 +40,19 @@ export function EmployeeSelectorCard({ employees, loading, error, onRetry, onSel
               <Image source={{ uri: `data:image/png;base64,${employee.image128}` }} style={styles.avatar} />
             ) : (
               <View style={styles.avatarFallback}>
-                <Text style={styles.avatarFallbackText}>{initials(employee.name)}</Text>
+                <Text style={[styles.avatarFallbackText, { color: palette.textBright }]}>{initials(employee.name)}</Text>
               </View>
             )}
             <View style={styles.rowContent}>
-              <Text style={styles.name}>{employee.name}</Text>
-              <Text style={styles.email}>{employee.workEmail || "Sin email de trabajo"}</Text>
+              <Text style={[styles.name, { color: palette.textBright }]}>{employee.name}</Text>
+              <Text style={[styles.email, { color: palette.textSubtle }]}>{employee.workEmail || "Sin email de trabajo"}</Text>
             </View>
           </Pressable>
         ))}
       </ScrollView>
 
-      <Pressable onPress={onRetry} style={styles.retryButton}>
-        <Text style={styles.retryLabel}>Recargar lista</Text>
+      <Pressable onPress={onRetry} style={[styles.retryButton, { borderColor: palette.borderMedium }]}>
+        <Text style={[styles.retryLabel, { color: palette.textBright }]}>Recargar lista</Text>
       </Pressable>
     </View>
   );
@@ -61,22 +62,17 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 20,
     padding: 16,
-    backgroundColor: splashColors.surfaceDark,
     borderWidth: 1,
-    borderColor: splashColors.borderLight,
     gap: 8,
   },
   title: {
-    color: splashColors.textBright,
     fontSize: 20,
     fontWeight: "700",
   },
   subtitle: {
-    color: splashColors.textMuted,
     fontSize: 13,
   },
   info: {
-    color: splashColors.textSubtle,
     fontSize: 13,
   },
   error: {
@@ -111,7 +107,6 @@ const styles = StyleSheet.create({
     borderColor: "rgba(113, 75, 103, 0.40)",
   },
   avatarFallbackText: {
-    color: splashColors.textBright,
     fontWeight: "700",
     fontSize: 13,
   },
@@ -120,12 +115,10 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   name: {
-    color: splashColors.textBright,
     fontSize: 14,
     fontWeight: "600",
   },
   email: {
-    color: splashColors.textSubtle,
     fontSize: 12,
   },
   retryButton: {
@@ -139,7 +132,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.04)",
   },
   retryLabel: {
-    color: splashColors.textBright,
     fontWeight: "600",
     fontSize: 13,
   },

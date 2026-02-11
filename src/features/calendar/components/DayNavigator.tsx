@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { splashColors } from "../../splash/theme/splashColors";
+import { useAppTheme } from "../../../shared/theme/appTheme";
 
 type DayNavigatorProps = {
   dateLabel: string;
@@ -10,20 +10,21 @@ type DayNavigatorProps = {
 };
 
 export function DayNavigator({ dateLabel, onPreviousDay, onNextDay, onOpenDatePicker }: DayNavigatorProps) {
+  const { palette } = useAppTheme();
   return (
     <View style={styles.container}>
-      <Pressable onPress={onPreviousDay} style={styles.button}>
-        <Text style={styles.buttonLabel}>{"<"}</Text>
+      <Pressable onPress={onPreviousDay} style={[styles.button, { borderColor: palette.borderMedium }]}>
+        <Text style={[styles.buttonLabel, { color: palette.textBright }]}>{"<"}</Text>
       </Pressable>
 
       <Pressable style={styles.center} onPress={onOpenDatePicker}>
-        <Text style={styles.subtitle}>Vista diaria</Text>
-        <Text style={styles.dateLabel}>{dateLabel}</Text>
-        <Text style={styles.helper}>Toca para elegir fecha</Text>
+        <Text style={[styles.subtitle, { color: palette.textMuted }]}>Vista diaria</Text>
+        <Text style={[styles.dateLabel, { color: palette.textBright }]}>{dateLabel}</Text>
+        <Text style={[styles.helper, { color: palette.textSubtle }]}>Toca para elegir fecha</Text>
       </Pressable>
 
-      <Pressable onPress={onNextDay} style={styles.button}>
-        <Text style={styles.buttonLabel}>{">"}</Text>
+      <Pressable onPress={onNextDay} style={[styles.button, { borderColor: palette.borderMedium }]}>
+        <Text style={[styles.buttonLabel, { color: palette.textBright }]}>{">"}</Text>
       </Pressable>
     </View>
   );
@@ -41,20 +42,17 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   subtitle: {
-    color: splashColors.textMuted,
     textTransform: "uppercase",
     letterSpacing: 1.2,
     fontSize: 12,
     fontWeight: "600",
   },
   dateLabel: {
-    color: splashColors.textBright,
     fontSize: 21,
     fontWeight: "700",
     textTransform: "capitalize",
   },
   helper: {
-    color: splashColors.textSubtle,
     fontSize: 11,
   },
   button: {
@@ -68,7 +66,6 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.12)",
   },
   buttonLabel: {
-    color: splashColors.textBright,
     fontSize: 18,
     fontWeight: "700",
   },

@@ -1,23 +1,20 @@
 import { useEffect, useRef } from "react";
-import { Animated, StyleSheet, View, Text } from "react-native";
+import { Animated, StyleSheet, View } from "react-native";
+import Svg, { Circle, Text as SvgText } from "react-native-svg";
 
-import { splashColors } from "../theme/splashColors";
+import { useAppTheme } from "../../../shared/theme/appTheme";
 
 const LOGO_SIZE = 110;
 const RING_SIZE = LOGO_SIZE + 24;
 
-/**
- * Logo "S" con un anillo luminoso que pulsa.
- * Aparece con scale+fade al montar.
- */
 export function LogoGlow() {
+  const { palette } = useAppTheme();
   const scale = useRef(new Animated.Value(0.5)).current;
   const opacity = useRef(new Animated.Value(0)).current;
   const ringScale = useRef(new Animated.Value(0.9)).current;
   const ringOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Entrada del logo
     Animated.parallel([
       Animated.spring(scale, {
         toValue: 1,
@@ -32,7 +29,6 @@ export function LogoGlow() {
       }),
     ]).start();
 
-    // Pulso del anillo luminoso (loop infinito)
     const ringPulse = Animated.loop(
       Animated.sequence([
         Animated.parallel([
@@ -59,33 +55,40 @@ export function LogoGlow() {
             useNativeDriver: true,
           }),
         ]),
-      ])
+      ]),
     );
 
-    // Inicia el pulso tras la entrada
-    setTimeout(() => ringPulse.start(), 500);
-
-    return () => ringPulse.stop();
-  }, [scale, opacity, ringScale, ringOpacity]);
+    const timeout = setTimeout(() => ringPulse.start(), 500);
+    return () => {
+      clearTimeout(timeout);
+      ringPulse.stop();
+    };
+  }, [opacity, ringOpacity, ringScale, scale]);
 
   return (
-    <Animated.View
-      style={[styles.wrapper, { opacity, transform: [{ scale }] }]}
-    >
-      {/* Anillo con glow */}
+    <Animated.View style={[styles.wrapper, { opacity, transform: [{ scale }] }]}>
       <Animated.View
         style={[
           styles.ring,
           {
             opacity: ringOpacity,
             transform: [{ scale: ringScale }],
+            borderColor: palette.glow,
+            shadowColor: palette.glow,
           },
         ]}
       />
 
-      {/* Círculo interior con la letra */}
-      <View style={styles.logoCircle}>
-        <Text style={styles.logoLetter}>S</Text>
+      <View style={[styles.logoCircle, { borderColor: palette.glowSoft }]}>
+        <Svg width={92} height={40} viewBox="0 0 92 40">
+          <Circle cx={14} cy={20} r={12} fill={palette.glow} />
+          <Circle cx={38} cy={20} r={12} fill={palette.glowLight} />
+          <Circle cx={62} cy={20} r={12} fill={palette.glow} />
+          <Circle cx={84} cy={20} r={8} fill={palette.glowLight} />
+          <SvgText x={8} y={25} fontSize={12} fontWeight="700" fill={palette.textBright}>
+            odoo
+          </SvgText>
+        </Svg>
       </View>
     </Animated.View>
   );
@@ -102,9 +105,6 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     borderRadius: RING_SIZE / 2,
     borderWidth: 2,
-    borderColor: splashColors.glow,
-    // Sombra simulando glow
-    shadowColor: splashColors.glow,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.8,
     shadowRadius: 20,
@@ -114,19 +114,9 @@ const styles = StyleSheet.create({
     width: LOGO_SIZE,
     height: LOGO_SIZE,
     borderRadius: LOGO_SIZE / 2,
-    backgroundColor: "rgba(113, 75, 103, 0.10)",
+    backgroundColor: "rgba(113, 75, 103, 0.12)",
     borderWidth: 1.5,
-    borderColor: "rgba(113, 75, 103, 0.35)",
     alignItems: "center",
     justifyContent: "center",
-  },
-  logoLetter: {
-    fontSize: 48,
-    fontWeight: "800",
-    color: splashColors.glow,
-    // Sombra de texto para efecto neon
-    textShadowColor: splashColors.glowSoft,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 18,
   },
 });

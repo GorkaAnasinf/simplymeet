@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { Animated, StyleSheet, View, Dimensions } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 
-import { splashColors } from "../theme/splashColors";
+import { useAppTheme } from "../../../shared/theme/appTheme";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 const BAR_WIDTH = SCREEN_W * 0.72;
@@ -18,6 +18,7 @@ interface ProgressBarProps {
  * Barra de progreso estilizada con relleno degradado y glow.
  */
 export function ProgressBar({ progress }: ProgressBarProps) {
+  const { palette } = useAppTheme();
   const fadeIn = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -39,11 +40,11 @@ export function ProgressBar({ progress }: ProgressBarProps) {
   return (
     <Animated.View style={[styles.container, { opacity: fadeIn }]}>
       {/* Track de fondo */}
-      <View style={styles.track}>
+      <View style={[styles.track, { backgroundColor: palette.progressTrack }]}>
         {/* Fill animado */}
         <Animated.View style={[styles.fillWrapper, { width: fillWidth }]}>
           <LinearGradient
-            colors={[splashColors.glow, splashColors.glowLight]}
+            colors={[palette.glow, palette.glowLight]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.fill}
@@ -57,6 +58,8 @@ export function ProgressBar({ progress }: ProgressBarProps) {
           styles.glowBar,
           {
             width: fillWidth,
+            backgroundColor: palette.progressGlow,
+            shadowColor: palette.glow,
           },
         ]}
       />
@@ -73,7 +76,7 @@ const styles = StyleSheet.create({
     width: BAR_WIDTH,
     height: BAR_HEIGHT,
     borderRadius: BAR_RADIUS,
-    backgroundColor: splashColors.progressTrack,
+    backgroundColor: "transparent",
     overflow: "hidden",
   },
   fillWrapper: {
@@ -88,10 +91,7 @@ const styles = StyleSheet.create({
   glowBar: {
     height: 6,
     borderRadius: 3,
-    backgroundColor: splashColors.progressGlow,
     marginTop: -2,
-    // Sombra para el efecto glow
-    shadowColor: splashColors.glow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.6,
     shadowRadius: 8,

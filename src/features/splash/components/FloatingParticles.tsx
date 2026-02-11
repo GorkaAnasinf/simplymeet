@@ -1,7 +1,7 @@
 import { useEffect, useRef, useMemo } from "react";
 import { Animated, StyleSheet, View, Dimensions } from "react-native";
 
-import { splashColors } from "../theme/splashColors";
+import { useAppTheme } from "../../../shared/theme/appTheme";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 
@@ -14,6 +14,7 @@ interface Particle {
   size: number;
   opacity: number;
   duration: number;
+  tone: "plum" | "teal";
 }
 
 /** Genera datos aleatorios para cada partícula */
@@ -24,6 +25,7 @@ function generateParticles(): Particle[] {
     size: 2 + Math.random() * 3,
     opacity: 0.08 + Math.random() * 0.18,
     duration: 4000 + Math.random() * 6000,
+    tone: Math.random() > 0.4 ? "plum" : "teal",
   }));
 }
 
@@ -32,18 +34,19 @@ function generateParticles(): Particle[] {
  * dando un efecto de "cosmos" sutil.
  */
 export function FloatingParticles() {
+  const { palette } = useAppTheme();
   const particles = useMemo(() => generateParticles(), []);
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
       {particles.map((p, i) => (
-        <SingleParticle key={i} data={p} />
+        <SingleParticle key={i} data={p} color={p.tone === "plum" ? palette.particlePlum : palette.particleTeal} />
       ))}
     </View>
   );
 }
 
-function SingleParticle({ data }: { data: Particle }) {
+function SingleParticle({ data, color }: { data: Particle; color: string }) {
   const translateY = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(data.opacity)).current;
 
@@ -101,6 +104,7 @@ function SingleParticle({ data }: { data: Particle }) {
           borderRadius: data.size / 2,
           opacity,
           transform: [{ translateY }],
+          backgroundColor: color,
         },
       ]}
     />
@@ -110,6 +114,5 @@ function SingleParticle({ data }: { data: Particle }) {
 const styles = StyleSheet.create({
   particle: {
     position: "absolute",
-    backgroundColor: splashColors.particle,
   },
 });
